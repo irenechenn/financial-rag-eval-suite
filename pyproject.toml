@@ -1,0 +1,27 @@
+[project]
+name = "financial-rag-eval-suite"
+version = "0.1.0"
+description = "Companion retrieval evaluation suite for financial-rag-engine."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+financial-rag-eval = "financial_rag_eval.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import argparse
+
+from financial_rag_eval.datasets import load_cases, load_retrieval_run
+from financial_rag_eval.project1_runner import run_project1_retrieval_sync
+from financial_rag_eval.reports import build_report, write_json_report, write_markdown_report
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Evaluate financial-rag-engine retrieval runs.")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    validate = subparsers.add_parser("validate-cases", help="Validate an eval case JSONL file.")
+    validate.add_argument("cases")
+
+    run_project1 = subparsers.add_parser("run-project1-retrieval", help="Run Project 1 FAISS retrieval for eval cases.")
+    run_project1.add_argument("--cases", required=True)
+    run_project1.add_argument("--out", required=True)
+    run_project1.add_argument("--project1-path", default="C:\\Users\\18518\\Desktop\\ireneProjects\\financial-rag-engine")
+    run_project1.add_argument("--index-path", default="C:\\Users\\18518\\Desktop\\ireneProjects\\financial-rag-engine\\indexes\\naive_voyage_finance")
+    run_project1.add_argument("--top-k", type=int, default=3)
+    run_project1.add_argument("--provider", default="voyage-faiss")
+    run_project1.add_argument("--use-expected-filters", action="store_true")
+
+    score = subparsers.add_parser("score-run", help="Score a retrieval run JSONL file.")
+    score.add_argument("--cases", required=True)
+    score.add_argument("--run", required=True)
+    score.add_argument("--k", type=int, default=3)
+    score.add_argument("--out-json", required=True)
+    score.add_argument("--out-md", required=True)
+
+    args = parser.parse_args()
+
+    if args.command == "validate-cases":
+        cases = load_cases(args.cases)
+        categories = sorted({case.category for case in cases})
+        print(f"Validated {len(cases)} cases across categories: {', '.join(categories)}")
+        return
+
+    if args.command == "run-project1-retrieval":
+        runs = run_project1_retrieval_sync(
+            cases_path=args.cases,
+            output_path=args.out,
+            project1_path=args.project1_path,
+            index_path=args.index_path,
+            top_k=args.top_k,
+            provider=args.provider,
+            use_expected_filters=args.use_expected_filters,
+        )
+        errors = sum(1 for run in runs if run.runtime_error)
+        print(f"Wrote {len(runs)} retrieval cases to {args.out} ({errors} runtime errors)")
+        return
+
+    if args.command == "score-run":
+        cases = load_cases(args.cases)
+        run = load_retrieval_run(args.run)
+        report = build_report(cases, run, args.k)
+        write_json_report(report, args.out_json)
+        write_markdown_report(report, args.out_md)
+        print(f"Scored {len(report.case_results)} cases at k={args.k}")
+        print(f"Wrote {args.out_json}")
+        print(f"Wrote {args.out_md}")
+        return
+
+
+if __name__ == "__main__":
+    main()
