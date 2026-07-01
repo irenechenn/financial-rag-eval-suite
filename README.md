@@ -31,7 +31,7 @@ Current v1 categories:
 | multi_hop | 4 | Cross-year retrieval questions |
 | comparison | 4 | Cross-company comparison retrieval questions |
 
-The v1 labels use inspectable weak relevance criteria: expected ticker, expected year, and required terms. The metric code also supports explicit `relevant_chunk_ids`, which should be the next dataset-hardening step.
+The v1 labels use inspectable relevance targets: expected ticker, expected year, and required terms. Simple cases usually have one target; multi-hop and comparison cases can require multiple targets, such as `MSFT 2023 cloud` plus `AMZN 2023 AWS`. The metric code also supports explicit `relevant_chunk_ids`, which should be the next dataset-hardening step.
 
 ## Metrics
 
@@ -41,13 +41,13 @@ Precision@K answers: among the top K retrieved chunks, how many were relevant?
 Precision@K = relevant retrieved chunks in top K / K
 ```
 
-Recall@K answers: among the known relevant evidence targets, how many were retrieved in the top K?
+Recall@K answers: among the known relevant evidence targets, how many were covered in the top K?
 
 ```text
-Recall@K = relevant retrieved evidence targets in top K / total relevant evidence targets
+Recall@K = covered evidence targets in top K / total evidence targets
 ```
 
-In weak-label mode, recall is capped at 1.0 because the label represents whether the expected evidence target was found, not the total number of all possible relevant transcript chunks.
+For multi-hop and comparison cases, Recall@K measures target coverage. For example, a question comparing Microsoft cloud and Amazon AWS has two targets; retrieving only Microsoft evidence gives partial recall even if the retrieved chunks are relevant.
 
 ## Benchmark Results
 
@@ -59,9 +59,9 @@ This run searches with the question text only. It measures how well semantic ret
 
 | Provider | Case Type | Cases | Precision@3 | Recall@3 | Runtime Errors |
 |---|---|---:|---:|---:|---:|
-| voyage-faiss | comparison | 4 | 0.333 | 0.750 | 0 |
+| voyage-faiss | comparison | 4 | 0.417 | 0.500 | 0 |
 | voyage-faiss | metadata_filtered | 6 | 0.389 | 0.667 | 0 |
-| voyage-faiss | multi_hop | 4 | 0.583 | 1.000 | 0 |
+| voyage-faiss | multi_hop | 4 | 0.583 | 0.750 | 0 |
 | voyage-faiss | simple | 10 | 0.333 | 0.700 | 0 |
 
 ### Tool-Style Filtered Retrieval
@@ -70,14 +70,14 @@ This run applies expected ticker/year filters when the case has a single expecte
 
 | Provider | Case Type | Cases | Precision@3 | Recall@3 | Runtime Errors |
 |---|---|---:|---:|---:|---:|
-| voyage-faiss-filtered | comparison | 4 | 0.833 | 1.000 | 0 |
+| voyage-faiss-filtered | comparison | 4 | 0.833 | 0.625 | 0 |
 | voyage-faiss-filtered | metadata_filtered | 6 | 0.556 | 0.833 | 0 |
-| voyage-faiss-filtered | multi_hop | 4 | 0.583 | 1.000 | 0 |
+| voyage-faiss-filtered | multi_hop | 4 | 0.583 | 0.750 | 0 |
 | voyage-faiss-filtered | simple | 10 | 0.733 | 1.000 | 0 |
 
 ## Interpretation
 
-The filtered run scores higher because metadata constraints remove wrong-company and wrong-year chunks before ranking. That is expected and useful: Project 1's agent is designed to call retrieval with ticker/year arguments when it can infer them.
+The filtered run scores higher because metadata constraints remove wrong-company and wrong-year chunks before ranking. That is expected and useful: Project 1's agent is designed to call retrieval with ticker/year arguments when it can infer them. The target-level recall scores also show a useful limitation: comparison questions may retrieve strong evidence for one side while missing the second required evidence target.
 
 The unfiltered run is still useful as a harder semantic retrieval baseline. It shows where the query alone is not enough and where metadata-aware tool calls matter.
 
@@ -134,7 +134,7 @@ financial-rag-eval score-run `
 pytest
 ```
 
-Current status: `5 passed`.
+Current status: `6 passed`.
 
 ## Limitations
 

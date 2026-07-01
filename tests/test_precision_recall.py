@@ -87,3 +87,34 @@ def test_weak_recall_is_capped_at_one() -> None:
 
     assert precision_at_k(retrieved, case, 2) == 1.0
     assert recall_at_k(retrieved, case, 2) == 1.0
+
+
+def test_target_level_recall_counts_covered_targets() -> None:
+    case = EvalCase.model_validate(
+        {
+            "id": "msft_vs_amzn",
+            "question": "question",
+            "category": "comparison",
+            "relevance_targets": [
+                {
+                    "label": "MSFT cloud",
+                    "tickers": ["MSFT"],
+                    "years": [2023],
+                    "required_terms": ["cloud"],
+                },
+                {
+                    "label": "AMZN AWS",
+                    "tickers": ["AMZN"],
+                    "years": [2023],
+                    "required_terms": ["aws"],
+                },
+            ],
+        }
+    )
+    retrieved = [
+        RetrievedChunk(chunk_id="x", rank=1, ticker="MSFT", year=2023, text="cloud revenue"),
+        RetrievedChunk(chunk_id="y", rank=2, ticker="MSFT", year=2023, text="cloud demand"),
+    ]
+
+    assert precision_at_k(retrieved, case, 2) == 1.0
+    assert recall_at_k(retrieved, case, 2) == 0.5

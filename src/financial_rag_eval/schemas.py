@@ -6,11 +6,17 @@ from pydantic import BaseModel, Field
 
 
 class RelevanceCriteria(BaseModel):
-    """Fallback relevance labels when stable chunk IDs are not available yet."""
+    """Inspectable relevance label based on metadata and required text terms."""
 
     tickers: list[str] = Field(default_factory=list)
     years: list[int] = Field(default_factory=list)
     required_terms: list[str] = Field(default_factory=list)
+
+
+class RelevanceTarget(RelevanceCriteria):
+    """One evidence target that should be covered by retrieved chunks."""
+
+    label: str = ""
 
 
 class EvalCase(BaseModel):
@@ -21,6 +27,7 @@ class EvalCase(BaseModel):
     expected_years: list[int] = Field(default_factory=list)
     relevant_chunk_ids: list[str] = Field(default_factory=list)
     relevance_criteria: RelevanceCriteria = Field(default_factory=RelevanceCriteria)
+    relevance_targets: list[RelevanceTarget] = Field(default_factory=list)
     notes: str = ""
 
 
