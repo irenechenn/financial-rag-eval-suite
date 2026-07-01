@@ -91,5 +91,6 @@ class ReportSummaryRow(BaseModel):
 class EvalReport(BaseModel):
     metric_type: Literal["retrieval"] = "retrieval"
     k: int
+    label_source: str = "target_labels"
     case_results: list[CaseMetricResult]
     summary: list[ReportSummaryRow]

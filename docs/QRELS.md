@@ -38,6 +38,33 @@ financial-rag-eval export-qrels `
   --out-md qrels/retrieval_v1_pooled_top3.md
 ```
 
+## Scoring With Qrels
+
+By default, qrels scoring uses only `accepted` judgments:
+
+```powershell
+financial-rag-eval score-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --k 3 `
+  --out-json reports/project1_voyage_faiss_top3_tool_filtered_qrels.json `
+  --out-md reports/project1_voyage_faiss_top3_tool_filtered_qrels.md
+```
+
+For workflow validation with unreviewed pooled candidates, include candidate judgments explicitly:
+
+```powershell
+financial-rag-eval score-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --judgment-status candidate `
+  --k 3 `
+  --out-json reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.json `
+  --out-md reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md
+```
+
 ## Why Separate Qrels Matter
 
 Target-level labels are useful for early evaluation, but explicit qrels are closer to standard information retrieval practice. Keeping candidate qrels separate makes it clear which labels are generated for review and which labels have been accepted as gold.

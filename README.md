@@ -140,6 +140,7 @@ Generated Markdown reports are available here:
 |---|---|
 | [`project1_voyage_faiss_top3_unfiltered.md`](reports/project1_voyage_faiss_top3_unfiltered.md) | Pure semantic retrieval baseline |
 | [`project1_voyage_faiss_top3_tool_filtered.md`](reports/project1_voyage_faiss_top3_tool_filtered.md) | Metadata-aware filtered retrieval run |
+| [`project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md) | Filtered run scored against pooled candidate qrels |
 | [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
 | [`tool_filtered_top3.md`](label_candidates/tool_filtered_top3.md) | Candidate `relevant_chunk_ids` for human relevance review |
 | [`retrieval_v1_pooled_top3.md`](qrels/retrieval_v1_pooled_top3.md) | Pooled candidate qrels generated from the filtered top-3 run |
@@ -230,6 +231,21 @@ financial-rag-eval export-qrels `
   --out-jsonl qrels/retrieval_v1_pooled_top3.jsonl `
   --out-md qrels/retrieval_v1_pooled_top3.md
 ```
+
+## Score With Qrels
+
+```powershell
+financial-rag-eval score-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --judgment-status candidate `
+  --k 3 `
+  --out-json reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.json `
+  --out-md reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md
+```
+
+The candidate-qrels report validates the scoring path. Reviewed benchmarks should use `accepted` qrels.
 
 ## Score A Retrieval Run
 

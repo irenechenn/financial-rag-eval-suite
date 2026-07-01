@@ -12,6 +12,7 @@ from financial_rag_eval.datasets import load_cases, load_retrieval_run
 from financial_rag_eval.labeling import generate_label_candidates
 from financial_rag_eval.project1_runner import run_project1_retrieval_sync
 from financial_rag_eval.qrels import export_candidate_qrels
+from financial_rag_eval.qrels_scoring import score_qrels_run
 from financial_rag_eval.reports import build_report, write_json_report, write_markdown_report
 
 
@@ -37,6 +38,21 @@ def main() -> None:
     score.add_argument("--k", type=int, default=3)
     score.add_argument("--out-json", required=True)
     score.add_argument("--out-md", required=True)
+
+    score_qrels = subparsers.add_parser("score-qrels", help="Score a retrieval run using qrel judgments.")
+    score_qrels.add_argument("--cases", required=True)
+    score_qrels.add_argument("--run", required=True)
+    score_qrels.add_argument("--qrels", required=True)
+    score_qrels.add_argument("--k", type=int, default=3)
+    score_qrels.add_argument(
+        "--judgment-status",
+        action="append",
+        choices=["candidate", "accepted", "rejected"],
+        default=None,
+        help="Qrel status to include. Defaults to accepted. Repeat to include multiple statuses.",
+    )
+    score_qrels.add_argument("--out-json", required=True)
+    score_qrels.add_argument("--out-md", required=True)
 
     compare = subparsers.add_parser("compare-runs", help="Compare two retrieval evaluation reports.")
     compare.add_argument("--baseline", required=True)
@@ -90,6 +106,21 @@ def main() -> None:
         write_json_report(report, args.out_json)
         write_markdown_report(report, args.out_md)
         print(f"Scored {len(report.case_results)} cases at k={args.k}")
+        print(f"Wrote {args.out_json}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "score-qrels":
+        report = score_qrels_run(
+            cases_path=args.cases,
+            run_path=args.run,
+            qrels_path=args.qrels,
+            out_json=args.out_json,
+            out_md=args.out_md,
+            k=args.k,
+            judgment_statuses=set(args.judgment_status or ["accepted"]),
+        )
+        print(f"Scored {len(report.case_results)} cases at k={args.k} using {report.label_source}")
         print(f"Wrote {args.out_json}")
         print(f"Wrote {args.out_md}")
         return

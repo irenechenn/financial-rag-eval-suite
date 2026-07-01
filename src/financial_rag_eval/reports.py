@@ -51,7 +51,15 @@ def build_report(cases: list[EvalCase], runs: list[RetrievalRunCase], k: int) ->
             )
         )
 
-    return EvalReport(k=k, case_results=results, summary=_summarize(results))
+    return build_report_from_results(k=k, case_results=results, label_source="target_labels")
+
+
+def build_report_from_results(
+    k: int,
+    case_results: list[CaseMetricResult],
+    label_source: str,
+) -> EvalReport:
+    return EvalReport(k=k, label_source=label_source, case_results=case_results, summary=_summarize(case_results))
 
 
 def _summarize(results: list[CaseMetricResult]) -> list[ReportSummaryRow]:
@@ -96,6 +104,7 @@ def render_markdown_report(report: EvalReport) -> str:
     providers = sorted({result.provider for result in report.case_results})
     categories = sorted({result.category for result in report.case_results})
     failures = [result for result in report.case_results if result.missed_targets or result.runtime_error]
+    unlabeled_cases = [result for result in report.case_results if result.total_relevant == 0]
 
     lines = [
         "# Retrieval Evaluation Report",
@@ -105,9 +114,11 @@ def render_markdown_report(report: EvalReport) -> str:
         "| Field | Value |",
         "|---|---|",
         f"| Metrics | Precision@{report.k}, Recall@{report.k}, Hit@{report.k}, MRR@{report.k} |",
+        f"| Label source | {report.label_source} |",
         f"| Cases scored | {len(report.case_results)} |",
         f"| Providers | {_format_targets(providers)} |",
         f"| Case categories | {_format_targets(categories)} |",
+        f"| Cases with no relevant labels | {len(unlabeled_cases)} |",
         f"| Cases with missed targets or runtime errors | {len(failures)} |",
         "",
         "```mermaid",
@@ -149,6 +160,21 @@ def render_markdown_report(report: EvalReport) -> str:
             )
     else:
         lines.append("| _None_ |  |  |  |  |  |")
+
+    lines.extend([
+        "",
+        "## Unlabeled Cases",
+        "",
+        "Cases below have zero relevant labels for the selected label source.",
+        "",
+        "| Case | Provider | Category |",
+        "|---|---|---|",
+    ])
+    if unlabeled_cases:
+        for result in unlabeled_cases:
+            lines.append(f"| {result.case_id} | {result.provider} | {result.category} |")
+    else:
+        lines.append("| _None_ |  |  |")
 
     lines.extend([
         "",

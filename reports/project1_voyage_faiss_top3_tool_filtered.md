@@ -5,9 +5,11 @@
 | Field | Value |
 |---|---|
 | Metrics | Precision@3, Recall@3, Hit@3, MRR@3 |
+| Label source | target_labels |
 | Cases scored | 24 |
 | Providers | voyage-faiss-filtered |
 | Case categories | comparison; metadata_filtered; multi_hop; simple |
+| Cases with no relevant labels | 0 |
 | Cases with missed targets or runtime errors | 6 |
 
 ```mermaid
@@ -39,6 +41,14 @@ Cases below missed at least one expected evidence target or produced a runtime e
 | msft_cloud_vs_amzn_aws_2023 | voyage-faiss-filtered | comparison | 0.500 | 1.000 | MSFT 2023 cloud | AMZN 2023 AWS |
 | googl_ads_vs_meta_ads_2024 | voyage-faiss-filtered | comparison | 0.500 | 1.000 | META 2024 advertising | GOOGL 2024 advertising |
 | tsla_margin_vs_nvda_data_center_2024 | voyage-faiss-filtered | comparison | 0.500 | 1.000 | NVDA 2024 data center | TSLA 2024 margin |
+
+## Unlabeled Cases
+
+Cases below have zero relevant labels for the selected label source.
+
+| Case | Provider | Category |
+|---|---|---|
+| _None_ |  |  |
 
 ## Case Results
 
