@@ -87,10 +87,30 @@ def write_markdown_report(report: EvalReport, path: str | Path) -> None:
 
 
 def render_markdown_report(report: EvalReport) -> str:
+    providers = sorted({result.provider for result in report.case_results})
+    categories = sorted({result.category for result in report.case_results})
+    failures = [result for result in report.case_results if result.missed_targets or result.runtime_error]
+
     lines = [
         "# Retrieval Evaluation Report",
         "",
-        f"Metric: Precision@{report.k} / Recall@{report.k}",
+        "## Run Overview",
+        "",
+        "| Field | Value |",
+        "|---|---|",
+        f"| Metric | Precision@{report.k} / Recall@{report.k} |",
+        f"| Cases scored | {len(report.case_results)} |",
+        f"| Providers | {_format_targets(providers)} |",
+        f"| Case categories | {_format_targets(categories)} |",
+        f"| Cases with missed targets or runtime errors | {len(failures)} |",
+        "",
+        "```mermaid",
+        "flowchart LR",
+        "    A[\"Eval cases\"] --> B[\"Retrieval run JSONL\"]",
+        "    B --> C[\"Precision@K / Recall@K\"]",
+        "    C --> D[\"Benchmark summary\"]",
+        "    C --> E[\"Failure analysis\"]",
+        "```",
         "",
         "## Benchmark Summary",
         "",
@@ -107,12 +127,11 @@ def render_markdown_report(report: EvalReport) -> str:
         "",
         "## Failure Analysis",
         "",
-        "Cases below missed at least one expected evidence target.",
+        "Cases below missed at least one expected evidence target or produced a runtime error.",
         "",
-        "| Case | Provider | Category | Recall@K | Covered Targets | Missed Targets |",
+        "| Case | Provider | Category | Recall@K | Covered Targets | Missed Targets / Error |",
         "|---|---|---|---:|---|---|",
     ])
-    failures = [result for result in report.case_results if result.missed_targets or result.runtime_error]
     if failures:
         for result in failures:
             covered = _format_targets(result.covered_targets)
@@ -128,7 +147,7 @@ def render_markdown_report(report: EvalReport) -> str:
         "",
         "## Case Results",
         "",
-        "| Case | Provider | Category | Precision@K | Recall@K | Relevant Retrieved |",
+        "| Case | Provider | Category | Precision@K | Recall@K | Evidence Targets Covered |",
         "|---|---|---|---:|---:|---:|",
     ])
     for result in report.case_results:

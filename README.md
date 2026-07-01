@@ -1,54 +1,73 @@
 # Financial RAG Eval Suite
 
-Companion evaluation repo for [`financial-rag-engine`](https://github.com/irenechenn/financial-rag-engine).
+Companion retrieval evaluation suite for [`financial-rag-engine`](https://github.com/irenechenn/financial-rag-engine).
 
-Project 1 built the agentic financial RAG system. This repo measures retrieval quality more formally with labeled cases, Precision@K, Recall@K, and JSON/Markdown benchmark reports.
+This project evaluates whether a financial RAG retriever returns the right earnings-call transcript evidence. It uses labeled retrieval cases, Precision@K, Recall@K, target-level evidence coverage, and JSON/Markdown reports with failure analysis.
 
-## What This Evaluates
+## System Overview
 
-This project evaluates whether Project 1's FAISS + Voyage retrieval layer returns evidence with the expected company/year/topic metadata.
+```mermaid
+flowchart LR
+    A["Eval cases\nquestion + expected evidence targets"] --> B["Project 1 runner\nFAISS + Voyage retrieval"]
+    B --> C["Retrieval run JSONL\ntop-k chunks + metadata"]
+    C --> D["Metric engine\nPrecision@K + Recall@K"]
+    D --> E["Reports\nJSON + Markdown"]
+    E --> F["Failure analysis\ncovered vs missed targets"]
+```
 
-It intentionally keeps the MVP small:
+## Evaluation Scope
 
-- 24 labeled retrieval cases
-- Precision@K and Recall@K
-- JSON report output
-- Markdown report output
-- failure analysis with covered and missed evidence targets
-- benchmark tables for GitHub/interview review
+| Component | Current Scope |
+|---|---|
+| Base system | `financial-rag-engine` retrieval layer |
+| Embeddings | Voyage finance embeddings |
+| Vector index | FAISS `IndexFlatIP` over L2-normalized vectors |
+| Dataset | 24 labeled retrieval cases |
+| Metrics | Precision@K, Recall@K |
+| Labels | Target-level ticker/year/topic relevance criteria |
+| Reports | JSON and Markdown |
+| Failure analysis | Covered and missed evidence targets |
 
-It does not include a dashboard, nDCG, production monitoring, or a large-scale benchmark suite.
+This repository evaluates retrieval quality. It does not evaluate final answer generation, citation quality, or end-to-end semantic correctness.
 
 ## Dataset
 
 Evaluation cases live in [`eval_cases/retrieval_v1.jsonl`](eval_cases/retrieval_v1.jsonl).
 
-Current v1 categories:
-
-| Category | Cases | Purpose |
+| Category | Cases | Evidence Target Pattern |
 |---|---:|---|
-| simple | 10 | Single-company, single-year retrieval |
+| simple | 10 | One company, one year, one topic |
 | metadata_filtered | 6 | Ticker/year-specific retrieval checks |
-| multi_hop | 4 | Cross-year retrieval questions |
-| comparison | 4 | Cross-company comparison retrieval questions |
+| multi_hop | 4 | Same company across multiple years |
+| comparison | 4 | Multiple companies or evidence targets |
 
-The v1 labels use inspectable relevance targets: expected ticker, expected year, and required terms. Simple cases usually have one target; multi-hop and comparison cases can require multiple targets, such as `MSFT 2023 cloud` plus `AMZN 2023 AWS`. The metric code also supports explicit `relevant_chunk_ids`, which should be the next dataset-hardening step.
+Target-level labels make multi-hop and comparison cases stricter. For example, a Microsoft-vs-Amazon comparison can require both of these targets:
+
+```text
+MSFT 2023 cloud
+AMZN 2023 AWS
+```
+
+Retrieving only one side receives partial Recall@K.
 
 ## Metrics
 
-Precision@K answers: among the top K retrieved chunks, how many were relevant?
+| Metric | Measures | Formula |
+|---|---|---|
+| Precision@K | How clean the top-k retrieved chunks are | relevant chunks in top K / K |
+| Recall@K | How many expected evidence targets were covered | covered evidence targets / total evidence targets |
 
-```text
-Precision@K = relevant retrieved chunks in top K / K
+For simple cases, Recall@K usually has one target. For multi-hop and comparison cases, Recall@K measures target coverage across multiple required evidence targets.
+
+```mermaid
+flowchart TD
+    Q["Question: Compare MSFT cloud and AMZN AWS in 2023"] --> T1["Target 1: MSFT 2023 cloud"]
+    Q --> T2["Target 2: AMZN 2023 AWS"]
+    R["Top-3 retrieval results"] --> C1["MSFT target covered"]
+    R --> C2["AMZN target missed"]
+    C1 --> S["Recall@3 = 1 / 2 = 0.5"]
+    C2 --> S
 ```
-
-Recall@K answers: among the known relevant evidence targets, how many were covered in the top K?
-
-```text
-Recall@K = covered evidence targets in top K / total evidence targets
-```
-
-For multi-hop and comparison cases, Recall@K measures target coverage. For example, a question comparing Microsoft cloud and Amazon AWS has two targets; retrieving only Microsoft evidence gives partial recall even if the retrieved chunks are relevant.
 
 ## Benchmark Results
 
@@ -56,7 +75,7 @@ Real Project 1 retrieval run, `top_k=3`, Voyage finance embeddings, FAISS `Index
 
 ### Unfiltered Semantic Retrieval
 
-This run searches with the question text only. It measures how well semantic retrieval finds the right evidence without applying expected ticker/year filters.
+Searches with question text only. This is the pure semantic retrieval baseline.
 
 | Provider | Case Type | Cases | Precision@3 | Recall@3 | Runtime Errors |
 |---|---|---:|---:|---:|---:|
@@ -67,7 +86,7 @@ This run searches with the question text only. It measures how well semantic ret
 
 ### Tool-Style Filtered Retrieval
 
-This run applies expected ticker/year filters when the case has a single expected ticker and year, matching the way Project 1's search tool is often used by the agent.
+Applies expected ticker/year filters when the case has a single expected ticker and year. This represents metadata-aware retrieval, similar to the structured search path used by the base RAG agent.
 
 | Provider | Case Type | Cases | Precision@3 | Recall@3 | Runtime Errors |
 |---|---|---:|---:|---:|---:|
@@ -76,11 +95,46 @@ This run applies expected ticker/year filters when the case has a single expecte
 | voyage-faiss-filtered | multi_hop | 4 | 0.583 | 0.750 | 0 |
 | voyage-faiss-filtered | simple | 10 | 0.733 | 1.000 | 0 |
 
-## Interpretation
+## Result Interpretation
 
-The filtered run scores higher because metadata constraints remove wrong-company and wrong-year chunks before ranking. That is expected and useful: Project 1's agent is designed to call retrieval with ticker/year arguments when it can infer them. The target-level recall scores also show a useful limitation: comparison questions may retrieve strong evidence for one side while missing the second required evidence target. The Markdown reports include a Failure Analysis section that lists covered and missed targets for each failed case.
+| Observation | Interpretation |
+|---|---|
+| Filtered retrieval improves simple-case Precision@3 from 0.333 to 0.733 | Metadata filters remove wrong-company and wrong-year chunks before ranking. |
+| Filtered simple-case Recall@3 reaches 1.000 | Single-target questions are well-covered when ticker/year constraints are available. |
+| Filtered comparison Precision@3 is 0.833 but Recall@3 is 0.625 | Retrieved chunks are often relevant, but top-k may cover only one side of a comparison. |
+| Unfiltered retrieval remains lower across most categories | Query text alone is a harder baseline for company/year-specific financial retrieval. |
 
-The unfiltered run is still useful as a harder semantic retrieval baseline. It shows where the query alone is not enough and where metadata-aware tool calls matter.
+## Report Outputs
+
+```mermaid
+flowchart LR
+    A["retrieval_v1.jsonl"] --> B["run-project1-retrieval"]
+    B --> C["sample_runs/*.jsonl"]
+    C --> D["score-run"]
+    D --> E["reports/*.json"]
+    D --> F["reports/*.md"]
+```
+
+Generated Markdown reports are available here:
+
+| Report | Description |
+|---|---|
+| [`project1_voyage_faiss_top3_unfiltered.md`](reports/project1_voyage_faiss_top3_unfiltered.md) | Pure semantic retrieval baseline |
+| [`project1_voyage_faiss_top3_tool_filtered.md`](reports/project1_voyage_faiss_top3_tool_filtered.md) | Metadata-aware filtered retrieval run |
+
+Markdown reports include:
+
+| Section | Purpose |
+|---|---|
+| Benchmark Summary | Aggregate Precision@K / Recall@K by provider and case type |
+| Failure Analysis | Cases with missed evidence targets |
+| Case Results | Per-case metric details |
+
+Example failure analysis row:
+
+| Case | Covered Targets | Missed Targets |
+|---|---|---|
+| `msft_cloud_vs_amzn_aws_2023` | MSFT 2023 cloud | AMZN 2023 AWS |
 
 ## Install
 
@@ -139,11 +193,8 @@ Current status: `7 passed`.
 
 ## Limitations
 
-- The v1 dataset is small and interview-defensible, not production-grade.
-- Weak labels are useful for quick evaluation, but explicit stable `relevant_chunk_ids` would make the benchmark stricter.
-- Precision/Recall here evaluate retrieval, not final answer correctness.
-- The filtered benchmark uses expected metadata when available, so it should be interpreted as tool-style retrieval rather than pure semantic search.
-
-## Resume Bullet
-
-Built a companion RAG evaluation suite for a financial transcript QA agent, expanding the benchmark to 24 labeled retrieval cases and adding Precision@K/Recall@K metrics with JSON and Markdown benchmark reports.
+- The v1 dataset is small and should be treated as a focused retrieval benchmark, not a broad production benchmark.
+- Target-level metadata/term labels are inspectable, but stable human-verified `relevant_chunk_ids` would make the benchmark stricter.
+- Precision@K and Recall@K evaluate retrieval quality, not final answer correctness.
+- The filtered benchmark uses expected metadata when available, so it should be interpreted separately from the unfiltered semantic baseline.
+- The current scope does not include dashboarding, nDCG, or large-scale monitoring.
