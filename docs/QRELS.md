@@ -79,6 +79,22 @@ financial-rag-eval audit-qrels `
 
 The audit checks status counts, relevance-grade counts, source counts, category coverage, unlabeled cases, unknown case IDs, and duplicate judgments.
 
+## Human Review Packet
+
+Review packets turn candidate qrels into a checklist with the original question, chunk metadata, matched targets, and text preview:
+
+```powershell
+financial-rag-eval make-review-packet `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --judgment-status candidate `
+  --out-jsonl qrels/retrieval_v1_review_packet.jsonl `
+  --out-md qrels/retrieval_v1_review_packet.md
+```
+
+This packet is meant for human review. Updating qrel statuses to `accepted` or `rejected` should happen only after inspecting whether the chunk directly supports the matched target.
+
 ## Why Separate Qrels Matter
 
 Target-level labels are useful for early evaluation, but explicit qrels are closer to standard information retrieval practice. Keeping candidate qrels separate makes it clear which labels are generated for review and which labels have been accepted as gold.

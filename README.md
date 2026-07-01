@@ -145,6 +145,7 @@ Generated Markdown reports are available here:
 | [`tool_filtered_top3.md`](label_candidates/tool_filtered_top3.md) | Candidate `relevant_chunk_ids` for human relevance review |
 | [`retrieval_v1_pooled_top3.md`](qrels/retrieval_v1_pooled_top3.md) | Pooled candidate qrels generated from the filtered top-3 run |
 | [`retrieval_v1_pooled_top3_audit.md`](qrels/retrieval_v1_pooled_top3_audit.md) | Qrels coverage and integrity audit |
+| [`retrieval_v1_review_packet.md`](qrels/retrieval_v1_review_packet.md) | Human-review checklist for candidate qrels |
 
 Markdown reports include:
 
@@ -256,6 +257,18 @@ financial-rag-eval audit-qrels `
   --qrels qrels/retrieval_v1_pooled_top3.jsonl `
   --out-json qrels/retrieval_v1_pooled_top3_audit.json `
   --out-md qrels/retrieval_v1_pooled_top3_audit.md
+```
+
+## Make A Review Packet
+
+```powershell
+financial-rag-eval make-review-packet `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --judgment-status candidate `
+  --out-jsonl qrels/retrieval_v1_review_packet.jsonl `
+  --out-md qrels/retrieval_v1_review_packet.md
 ```
 
 ## Score A Retrieval Run

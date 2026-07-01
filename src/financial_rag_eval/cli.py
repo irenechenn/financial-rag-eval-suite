@@ -13,6 +13,7 @@ from financial_rag_eval.labeling import generate_label_candidates
 from financial_rag_eval.project1_runner import run_project1_retrieval_sync
 from financial_rag_eval.qrels import export_candidate_qrels
 from financial_rag_eval.qrels_audit import audit_qrels
+from financial_rag_eval.qrels_review import make_review_packet
 from financial_rag_eval.qrels_scoring import score_qrels_run
 from financial_rag_eval.reports import build_report, write_json_report, write_markdown_report
 
@@ -83,6 +84,20 @@ def main() -> None:
     audit.add_argument("--qrels", required=True)
     audit.add_argument("--out-json", required=True)
     audit.add_argument("--out-md", required=True)
+
+    review = subparsers.add_parser("make-review-packet", help="Create a qrels human-review checklist.")
+    review.add_argument("--cases", required=True)
+    review.add_argument("--run", required=True)
+    review.add_argument("--qrels", required=True)
+    review.add_argument(
+        "--judgment-status",
+        action="append",
+        choices=["candidate", "accepted", "rejected"],
+        default=None,
+        help="Qrel status to include. Defaults to candidate. Repeat to include multiple statuses.",
+    )
+    review.add_argument("--out-jsonl", required=True)
+    review.add_argument("--out-md", required=True)
 
     args = parser.parse_args()
 
@@ -186,6 +201,20 @@ def main() -> None:
             f"({len(report.unlabeled_case_ids)} unlabeled cases)"
         )
         print(f"Wrote {args.out_json}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "make-review-packet":
+        items = make_review_packet(
+            cases_path=args.cases,
+            run_path=args.run,
+            qrels_path=args.qrels,
+            out_jsonl=args.out_jsonl,
+            out_md=args.out_md,
+            statuses=set(args.judgment_status or ["candidate"]),
+        )
+        print(f"Wrote {len(items)} qrels review items")
+        print(f"Wrote {args.out_jsonl}")
         print(f"Wrote {args.out_md}")
         return
 
