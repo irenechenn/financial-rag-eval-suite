@@ -25,6 +25,7 @@ flowchart LR
 | Dataset | 24 labeled retrieval cases |
 | Retrieval metrics | Precision@K, Recall@K, Hit@K, MRR@K |
 | Labels | Target-level ticker/year/topic relevance criteria |
+| Qrels | Pooled candidate relevance judgments for human review |
 | Reports | JSON and Markdown |
 | Failure analysis | Covered and missed evidence targets |
 | Agent trace metrics | Tool call recall, argument accuracy, sequence pass |
@@ -82,6 +83,7 @@ flowchart TD
 | [`docs/AGENT_TRACE_EVAL.md`](docs/AGENT_TRACE_EVAL.md) | Tool-call and argument-level agent trace evaluation |
 | [`docs/REGRESSION_COMPARISON.md`](docs/REGRESSION_COMPARISON.md) | Baseline-vs-candidate run comparison |
 | [`docs/LABEL_HARDENING.md`](docs/LABEL_HARDENING.md) | Human-review workflow for promoting target-level matches into explicit chunk labels |
+| [`docs/QRELS.md`](docs/QRELS.md) | Pooled relevance judgment format and review workflow |
 
 ## Benchmark Results
 
@@ -140,6 +142,7 @@ Generated Markdown reports are available here:
 | [`project1_voyage_faiss_top3_tool_filtered.md`](reports/project1_voyage_faiss_top3_tool_filtered.md) | Metadata-aware filtered retrieval run |
 | [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
 | [`tool_filtered_top3.md`](label_candidates/tool_filtered_top3.md) | Candidate `relevant_chunk_ids` for human relevance review |
+| [`retrieval_v1_pooled_top3.md`](qrels/retrieval_v1_pooled_top3.md) | Pooled candidate qrels generated from the filtered top-3 run |
 
 Markdown reports include:
 
@@ -215,6 +218,18 @@ financial-rag-eval suggest-labels `
 ```
 
 This command produces review candidates only. Confirmed chunk IDs should be manually promoted into the eval cases before treating them as gold labels.
+
+## Export Pooled Qrels
+
+```powershell
+financial-rag-eval export-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --k 3 `
+  --source project1_voyage_faiss_top3_tool_filtered `
+  --out-jsonl qrels/retrieval_v1_pooled_top3.jsonl `
+  --out-md qrels/retrieval_v1_pooled_top3.md
+```
 
 ## Score A Retrieval Run
 

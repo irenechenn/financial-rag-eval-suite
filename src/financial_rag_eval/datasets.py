@@ -6,7 +6,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from financial_rag_eval.schemas import EvalCase, RetrievalRunCase
+from financial_rag_eval.schemas import EvalCase, QrelJudgment, RetrievalRunCase
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -31,3 +31,7 @@ def load_cases(path: str | Path) -> list[EvalCase]:
 
 def load_retrieval_run(path: str | Path) -> list[RetrievalRunCase]:
     return _load_jsonl(Path(path), RetrievalRunCase)
+
+
+def load_qrels(path: str | Path) -> list[QrelJudgment]:
+    return _load_jsonl(Path(path), QrelJudgment)

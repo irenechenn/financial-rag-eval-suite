@@ -48,6 +48,18 @@ class RetrievalRunCase(BaseModel):
     runtime_error: str | None = None
 
 
+class QrelJudgment(BaseModel):
+    """One pooled relevance judgment for a query/chunk pair."""
+
+    case_id: str
+    chunk_id: str
+    relevance: int = Field(ge=0, le=2)
+    status: Literal["candidate", "accepted", "rejected"] = "candidate"
+    source: str = ""
+    matched_targets: list[str] = Field(default_factory=list)
+    notes: str = ""
+
+
 class CaseMetricResult(BaseModel):
     case_id: str
     category: str

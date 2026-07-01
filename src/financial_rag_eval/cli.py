@@ -11,6 +11,7 @@ from financial_rag_eval.compare import (
 from financial_rag_eval.datasets import load_cases, load_retrieval_run
 from financial_rag_eval.labeling import generate_label_candidates
 from financial_rag_eval.project1_runner import run_project1_retrieval_sync
+from financial_rag_eval.qrels import export_candidate_qrels
 from financial_rag_eval.reports import build_report, write_json_report, write_markdown_report
 
 
@@ -51,6 +52,14 @@ def main() -> None:
     labels.add_argument("--k", type=int, default=3)
     labels.add_argument("--out-jsonl", required=True)
     labels.add_argument("--out-md", required=True)
+
+    qrels = subparsers.add_parser("export-qrels", help="Export pooled candidate qrels for human review.")
+    qrels.add_argument("--cases", required=True)
+    qrels.add_argument("--run", required=True)
+    qrels.add_argument("--k", type=int, default=3)
+    qrels.add_argument("--source", default="retrieval-pool")
+    qrels.add_argument("--out-jsonl", required=True)
+    qrels.add_argument("--out-md", required=True)
 
     args = parser.parse_args()
 
@@ -109,6 +118,20 @@ def main() -> None:
         )
         candidate_count = sum(len(item.candidates) for item in candidates)
         print(f"Generated {candidate_count} candidate chunk labels across {len(candidates)} cases")
+        print(f"Wrote {args.out_jsonl}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "export-qrels":
+        qrels_output = export_candidate_qrels(
+            cases_path=args.cases,
+            run_path=args.run,
+            out_jsonl=args.out_jsonl,
+            out_md=args.out_md,
+            k=args.k,
+            source=args.source,
+        )
+        print(f"Exported {len(qrels_output)} candidate qrels")
         print(f"Wrote {args.out_jsonl}")
         print(f"Wrote {args.out_md}")
         return
