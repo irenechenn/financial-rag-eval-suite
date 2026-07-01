@@ -2,6 +2,12 @@ from __future__ import annotations
 
 import argparse
 
+from financial_rag_eval.compare import (
+    compare_reports,
+    load_eval_report,
+    write_comparison_json,
+    write_comparison_markdown,
+)
 from financial_rag_eval.datasets import load_cases, load_retrieval_run
 from financial_rag_eval.project1_runner import run_project1_retrieval_sync
 from financial_rag_eval.reports import build_report, write_json_report, write_markdown_report
@@ -29,6 +35,14 @@ def main() -> None:
     score.add_argument("--k", type=int, default=3)
     score.add_argument("--out-json", required=True)
     score.add_argument("--out-md", required=True)
+
+    compare = subparsers.add_parser("compare-runs", help="Compare two retrieval evaluation reports.")
+    compare.add_argument("--baseline", required=True)
+    compare.add_argument("--candidate", required=True)
+    compare.add_argument("--baseline-name", default="baseline")
+    compare.add_argument("--candidate-name", default="candidate")
+    compare.add_argument("--out-json", required=True)
+    compare.add_argument("--out-md", required=True)
 
     args = parser.parse_args()
 
@@ -59,6 +73,20 @@ def main() -> None:
         write_json_report(report, args.out_json)
         write_markdown_report(report, args.out_md)
         print(f"Scored {len(report.case_results)} cases at k={args.k}")
+        print(f"Wrote {args.out_json}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "compare-runs":
+        comparison = compare_reports(
+            baseline=load_eval_report(args.baseline),
+            candidate=load_eval_report(args.candidate),
+            baseline_name=args.baseline_name,
+            candidate_name=args.candidate_name,
+        )
+        write_comparison_json(comparison, args.out_json)
+        write_comparison_markdown(comparison, args.out_md)
+        print(f"Compared {len(comparison.case_deltas)} shared cases")
         print(f"Wrote {args.out_json}")
         print(f"Wrote {args.out_md}")
         return

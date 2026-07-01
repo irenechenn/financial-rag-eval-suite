@@ -28,6 +28,7 @@ flowchart LR
 | Reports | JSON and Markdown |
 | Failure analysis | Covered and missed evidence targets |
 | Agent trace metrics | Tool call recall, argument accuracy, sequence pass |
+| Regression comparison | Summary deltas and case-level changes across runs |
 
 The benchmark tables below evaluate retrieval quality. The agent trace module adds deterministic tool-use checks, but the project does not yet evaluate final answer generation, citation quality, or end-to-end semantic correctness.
 
@@ -79,6 +80,7 @@ flowchart TD
 | [`docs/METRICS.md`](docs/METRICS.md) | Retrieval and agent trace metric definitions |
 | [`docs/DATASET.md`](docs/DATASET.md) | Dataset schema and labeling policy |
 | [`docs/AGENT_TRACE_EVAL.md`](docs/AGENT_TRACE_EVAL.md) | Tool-call and argument-level agent trace evaluation |
+| [`docs/REGRESSION_COMPARISON.md`](docs/REGRESSION_COMPARISON.md) | Baseline-vs-candidate run comparison |
 
 ## Benchmark Results
 
@@ -125,6 +127,8 @@ flowchart LR
     C --> D["score-run"]
     D --> E["reports/*.json"]
     D --> F["reports/*.md"]
+    E --> G["compare-runs"]
+    G --> H["regression report"]
 ```
 
 Generated Markdown reports are available here:
@@ -133,6 +137,7 @@ Generated Markdown reports are available here:
 |---|---|
 | [`project1_voyage_faiss_top3_unfiltered.md`](reports/project1_voyage_faiss_top3_unfiltered.md) | Pure semantic retrieval baseline |
 | [`project1_voyage_faiss_top3_tool_filtered.md`](reports/project1_voyage_faiss_top3_tool_filtered.md) | Metadata-aware filtered retrieval run |
+| [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
 
 Markdown reports include:
 
@@ -182,6 +187,18 @@ financial-rag-eval run-project1-retrieval `
   --top-k 3 `
   --provider voyage-faiss-filtered `
   --use-expected-filters
+```
+
+## Compare Two Reports
+
+```powershell
+financial-rag-eval compare-runs `
+  --baseline reports/project1_voyage_faiss_top3_unfiltered.json `
+  --candidate reports/project1_voyage_faiss_top3_tool_filtered.json `
+  --baseline-name unfiltered `
+  --candidate-name filtered `
+  --out-json reports/unfiltered_vs_filtered.json `
+  --out-md reports/unfiltered_vs_filtered.md
 ```
 
 ## Score A Retrieval Run
