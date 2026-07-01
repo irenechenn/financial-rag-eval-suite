@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .env
 reports/*.json
+label_candidates/*.jsonl

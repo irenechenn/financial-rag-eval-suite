@@ -9,6 +9,7 @@ from financial_rag_eval.compare import (
     write_comparison_markdown,
 )
 from financial_rag_eval.datasets import load_cases, load_retrieval_run
+from financial_rag_eval.labeling import generate_label_candidates
 from financial_rag_eval.project1_runner import run_project1_retrieval_sync
 from financial_rag_eval.reports import build_report, write_json_report, write_markdown_report
 
@@ -43,6 +44,13 @@ def main() -> None:
     compare.add_argument("--candidate-name", default="candidate")
     compare.add_argument("--out-json", required=True)
     compare.add_argument("--out-md", required=True)
+
+    labels = subparsers.add_parser("suggest-labels", help="Generate candidate relevant chunk IDs for human review.")
+    labels.add_argument("--cases", required=True)
+    labels.add_argument("--run", required=True)
+    labels.add_argument("--k", type=int, default=3)
+    labels.add_argument("--out-jsonl", required=True)
+    labels.add_argument("--out-md", required=True)
 
     args = parser.parse_args()
 
@@ -88,6 +96,20 @@ def main() -> None:
         write_comparison_markdown(comparison, args.out_md)
         print(f"Compared {len(comparison.case_deltas)} shared cases")
         print(f"Wrote {args.out_json}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "suggest-labels":
+        candidates = generate_label_candidates(
+            cases_path=args.cases,
+            run_path=args.run,
+            out_jsonl=args.out_jsonl,
+            out_md=args.out_md,
+            k=args.k,
+        )
+        candidate_count = sum(len(item.candidates) for item in candidates)
+        print(f"Generated {candidate_count} candidate chunk labels across {len(candidates)} cases")
+        print(f"Wrote {args.out_jsonl}")
         print(f"Wrote {args.out_md}")
         return
 

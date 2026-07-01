@@ -66,6 +66,19 @@ def is_relevant(chunk: RetrievedChunk, case: EvalCase) -> bool:
     return any(_matches_criteria(chunk, target) for target in _targets_for_case(case))
 
 
+def matching_target_labels(chunk: RetrievedChunk, case: EvalCase) -> list[str]:
+    """Return target labels matched by one retrieved chunk."""
+
+    if case.relevant_chunk_ids:
+        return [chunk.chunk_id] if chunk.chunk_id in set(case.relevant_chunk_ids) else []
+
+    labels: list[str] = []
+    for index, target in enumerate(_targets_for_case(case), start=1):
+        if _matches_criteria(chunk, target):
+            labels.append(_target_label(target, index))
+    return labels
+
+
 def precision_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> float:
     top_k = _top_k(retrieved, k)
     if not top_k:

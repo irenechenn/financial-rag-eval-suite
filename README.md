@@ -81,6 +81,7 @@ flowchart TD
 | [`docs/DATASET.md`](docs/DATASET.md) | Dataset schema and labeling policy |
 | [`docs/AGENT_TRACE_EVAL.md`](docs/AGENT_TRACE_EVAL.md) | Tool-call and argument-level agent trace evaluation |
 | [`docs/REGRESSION_COMPARISON.md`](docs/REGRESSION_COMPARISON.md) | Baseline-vs-candidate run comparison |
+| [`docs/LABEL_HARDENING.md`](docs/LABEL_HARDENING.md) | Human-review workflow for promoting target-level matches into explicit chunk labels |
 
 ## Benchmark Results
 
@@ -138,6 +139,7 @@ Generated Markdown reports are available here:
 | [`project1_voyage_faiss_top3_unfiltered.md`](reports/project1_voyage_faiss_top3_unfiltered.md) | Pure semantic retrieval baseline |
 | [`project1_voyage_faiss_top3_tool_filtered.md`](reports/project1_voyage_faiss_top3_tool_filtered.md) | Metadata-aware filtered retrieval run |
 | [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
+| [`tool_filtered_top3.md`](label_candidates/tool_filtered_top3.md) | Candidate `relevant_chunk_ids` for human relevance review |
 
 Markdown reports include:
 
@@ -200,6 +202,19 @@ financial-rag-eval compare-runs `
   --out-json reports/unfiltered_vs_filtered.json `
   --out-md reports/unfiltered_vs_filtered.md
 ```
+
+## Generate Label Candidates
+
+```powershell
+financial-rag-eval suggest-labels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --k 3 `
+  --out-jsonl label_candidates/tool_filtered_top3.jsonl `
+  --out-md label_candidates/tool_filtered_top3.md
+```
+
+This command produces review candidates only. Confirmed chunk IDs should be manually promoted into the eval cases before treating them as gold labels.
 
 ## Score A Retrieval Run
 
