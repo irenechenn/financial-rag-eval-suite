@@ -1,0 +1,44 @@
+{
+  "category_coverage": [
+    {
+      "cases": 4,
+      "cases_with_qrels": 4,
+      "category": "comparison",
+      "judgments": 10
+    },
+    {
+      "cases": 6,
+      "cases_with_qrels": 5,
+      "category": "metadata_filtered",
+      "judgments": 10
+    },
+    {
+      "cases": 4,
+      "cases_with_qrels": 4,
+      "category": "multi_hop",
+      "judgments": 7
+    },
+    {
+      "cases": 10,
+      "cases_with_qrels": 10,
+      "category": "simple",
+      "judgments": 22
+    }
+  ],
+  "duplicate_judgments": [],
+  "relevance_counts": {
+    "1": 49
+  },
+  "source_counts": {
+    "project1_voyage_faiss_top3_tool_filtered": 49
+  },
+  "status_counts": {
+    "candidate": 49
+  },
+  "total_cases": 24,
+  "total_judgments": 49,
+  "unknown_case_ids": [],
+  "unlabeled_case_ids": [
+    "tsla_2024_profitability_metadata"
+  ]
+}

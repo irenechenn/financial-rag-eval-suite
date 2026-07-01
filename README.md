@@ -144,6 +144,7 @@ Generated Markdown reports are available here:
 | [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
 | [`tool_filtered_top3.md`](label_candidates/tool_filtered_top3.md) | Candidate `relevant_chunk_ids` for human relevance review |
 | [`retrieval_v1_pooled_top3.md`](qrels/retrieval_v1_pooled_top3.md) | Pooled candidate qrels generated from the filtered top-3 run |
+| [`retrieval_v1_pooled_top3_audit.md`](qrels/retrieval_v1_pooled_top3_audit.md) | Qrels coverage and integrity audit |
 
 Markdown reports include:
 
@@ -246,6 +247,16 @@ financial-rag-eval score-qrels `
 ```
 
 The candidate-qrels report validates the scoring path. Reviewed benchmarks should use `accepted` qrels.
+
+## Audit Qrels
+
+```powershell
+financial-rag-eval audit-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --out-json qrels/retrieval_v1_pooled_top3_audit.json `
+  --out-md qrels/retrieval_v1_pooled_top3_audit.md
+```
 
 ## Score A Retrieval Run
 

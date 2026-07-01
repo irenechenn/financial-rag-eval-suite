@@ -12,6 +12,7 @@ from financial_rag_eval.datasets import load_cases, load_retrieval_run
 from financial_rag_eval.labeling import generate_label_candidates
 from financial_rag_eval.project1_runner import run_project1_retrieval_sync
 from financial_rag_eval.qrels import export_candidate_qrels
+from financial_rag_eval.qrels_audit import audit_qrels
 from financial_rag_eval.qrels_scoring import score_qrels_run
 from financial_rag_eval.reports import build_report, write_json_report, write_markdown_report
 
@@ -76,6 +77,12 @@ def main() -> None:
     qrels.add_argument("--source", default="retrieval-pool")
     qrels.add_argument("--out-jsonl", required=True)
     qrels.add_argument("--out-md", required=True)
+
+    audit = subparsers.add_parser("audit-qrels", help="Validate qrel coverage and integrity.")
+    audit.add_argument("--cases", required=True)
+    audit.add_argument("--qrels", required=True)
+    audit.add_argument("--out-json", required=True)
+    audit.add_argument("--out-md", required=True)
 
     args = parser.parse_args()
 
@@ -164,6 +171,21 @@ def main() -> None:
         )
         print(f"Exported {len(qrels_output)} candidate qrels")
         print(f"Wrote {args.out_jsonl}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "audit-qrels":
+        report = audit_qrels(
+            cases_path=args.cases,
+            qrels_path=args.qrels,
+            out_json=args.out_json,
+            out_md=args.out_md,
+        )
+        print(
+            f"Audited {report.total_judgments} qrels across {report.total_cases} cases "
+            f"({len(report.unlabeled_case_ids)} unlabeled cases)"
+        )
+        print(f"Wrote {args.out_json}")
         print(f"Wrote {args.out_md}")
         return
 

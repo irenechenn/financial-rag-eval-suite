@@ -65,6 +65,20 @@ financial-rag-eval score-qrels `
   --out-md reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md
 ```
 
+## Auditing Qrels
+
+Audit reports check qrel coverage and data quality before scoring:
+
+```powershell
+financial-rag-eval audit-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --out-json qrels/retrieval_v1_pooled_top3_audit.json `
+  --out-md qrels/retrieval_v1_pooled_top3_audit.md
+```
+
+The audit checks status counts, relevance-grade counts, source counts, category coverage, unlabeled cases, unknown case IDs, and duplicate judgments.
+
 ## Why Separate Qrels Matter
 
 Target-level labels are useful for early evaluation, but explicit qrels are closer to standard information retrieval practice. Keeping candidate qrels separate makes it clear which labels are generated for review and which labels have been accepted as gold.
