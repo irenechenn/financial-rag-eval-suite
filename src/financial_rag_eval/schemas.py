@@ -55,6 +55,8 @@ class CaseMetricResult(BaseModel):
     k: int
     precision_at_k: float
     recall_at_k: float
+    hit_at_k: float
+    reciprocal_rank_at_k: float
     relevant_retrieved: int
     retrieved_at_k: int
     total_relevant: int
@@ -69,6 +71,8 @@ class ReportSummaryRow(BaseModel):
     cases: int
     precision_at_k: float
     recall_at_k: float
+    hit_at_k: float
+    mrr_at_k: float
     runtime_errors: int
 
 

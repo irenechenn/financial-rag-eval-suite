@@ -2,7 +2,7 @@
 
 Companion retrieval evaluation suite for [`financial-rag-engine`](https://github.com/irenechenn/financial-rag-engine).
 
-This project evaluates whether a financial RAG retriever returns the right earnings-call transcript evidence. It uses labeled retrieval cases, Precision@K, Recall@K, target-level evidence coverage, and JSON/Markdown reports with failure analysis.
+This project evaluates whether a financial RAG retriever returns the right earnings-call transcript evidence. It uses labeled retrieval cases, Precision@K, Recall@K, Hit@K, MRR@K, target-level evidence coverage, deterministic agent trace metrics, and JSON/Markdown reports with failure analysis.
 
 ## System Overview
 
@@ -10,7 +10,7 @@ This project evaluates whether a financial RAG retriever returns the right earni
 flowchart LR
     A["Eval cases\nquestion + expected evidence targets"] --> B["Project 1 runner\nFAISS + Voyage retrieval"]
     B --> C["Retrieval run JSONL\ntop-k chunks + metadata"]
-    C --> D["Metric engine\nPrecision@K + Recall@K"]
+    C --> D["Metric engine\nPrecision@K + Recall@K + Hit@K + MRR@K"]
     D --> E["Reports\nJSON + Markdown"]
     E --> F["Failure analysis\ncovered vs missed targets"]
 ```
@@ -23,12 +23,13 @@ flowchart LR
 | Embeddings | Voyage finance embeddings |
 | Vector index | FAISS `IndexFlatIP` over L2-normalized vectors |
 | Dataset | 24 labeled retrieval cases |
-| Metrics | Precision@K, Recall@K |
+| Retrieval metrics | Precision@K, Recall@K, Hit@K, MRR@K |
 | Labels | Target-level ticker/year/topic relevance criteria |
 | Reports | JSON and Markdown |
 | Failure analysis | Covered and missed evidence targets |
+| Agent trace metrics | Tool call recall, argument accuracy, sequence pass |
 
-This repository evaluates retrieval quality. It does not evaluate final answer generation, citation quality, or end-to-end semantic correctness.
+The benchmark tables below evaluate retrieval quality. The agent trace module adds deterministic tool-use checks, but the project does not yet evaluate final answer generation, citation quality, or end-to-end semantic correctness.
 
 ## Dataset
 
@@ -56,6 +57,8 @@ Retrieving only one side receives partial Recall@K.
 |---|---|---|
 | Precision@K | How clean the top-k retrieved chunks are | relevant chunks in top K / K |
 | Recall@K | How many expected evidence targets were covered | covered evidence targets / total evidence targets |
+| Hit@K | Whether at least one expected target was found | 1 if any target is covered, else 0 |
+| MRR@K | How early the first relevant chunk appears | reciprocal rank of first relevant result |
 
 For simple cases, Recall@K usually has one target. For multi-hop and comparison cases, Recall@K measures target coverage across multiple required evidence targets.
 
@@ -69,6 +72,14 @@ flowchart TD
     C2 --> S
 ```
 
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| [`docs/METRICS.md`](docs/METRICS.md) | Retrieval and agent trace metric definitions |
+| [`docs/DATASET.md`](docs/DATASET.md) | Dataset schema and labeling policy |
+| [`docs/AGENT_TRACE_EVAL.md`](docs/AGENT_TRACE_EVAL.md) | Tool-call and argument-level agent trace evaluation |
+
 ## Benchmark Results
 
 Real Project 1 retrieval run, `top_k=3`, Voyage finance embeddings, FAISS `IndexFlatIP` over L2-normalized vectors.
@@ -77,31 +88,32 @@ Real Project 1 retrieval run, `top_k=3`, Voyage finance embeddings, FAISS `Index
 
 Searches with question text only. This is the pure semantic retrieval baseline.
 
-| Provider | Case Type | Cases | Precision@3 | Recall@3 | Runtime Errors |
-|---|---|---:|---:|---:|---:|
-| voyage-faiss | comparison | 4 | 0.417 | 0.500 | 0 |
-| voyage-faiss | metadata_filtered | 6 | 0.389 | 0.667 | 0 |
-| voyage-faiss | multi_hop | 4 | 0.583 | 0.750 | 0 |
-| voyage-faiss | simple | 10 | 0.333 | 0.700 | 0 |
+| Provider | Case Type | Cases | Precision@3 | Recall@3 | Hit@3 | MRR@3 | Runtime Errors |
+|---|---|---:|---:|---:|---:|---:|---:|
+| voyage-faiss | comparison | 4 | 0.417 | 0.500 | 1.000 | 0.583 | 0 |
+| voyage-faiss | metadata_filtered | 6 | 0.389 | 0.667 | 0.667 | 0.361 | 0 |
+| voyage-faiss | multi_hop | 4 | 0.583 | 0.750 | 1.000 | 0.875 | 0 |
+| voyage-faiss | simple | 10 | 0.333 | 0.700 | 0.700 | 0.600 | 0 |
 
 ### Tool-Style Filtered Retrieval
 
 Applies expected ticker/year filters when the case has a single expected ticker and year. This represents metadata-aware retrieval, similar to the structured search path used by the base RAG agent.
 
-| Provider | Case Type | Cases | Precision@3 | Recall@3 | Runtime Errors |
-|---|---|---:|---:|---:|---:|
-| voyage-faiss-filtered | comparison | 4 | 0.833 | 0.625 | 0 |
-| voyage-faiss-filtered | metadata_filtered | 6 | 0.556 | 0.833 | 0 |
-| voyage-faiss-filtered | multi_hop | 4 | 0.583 | 0.750 | 0 |
-| voyage-faiss-filtered | simple | 10 | 0.733 | 1.000 | 0 |
+| Provider | Case Type | Cases | Precision@3 | Recall@3 | Hit@3 | MRR@3 | Runtime Errors |
+|---|---|---:|---:|---:|---:|---:|---:|
+| voyage-faiss-filtered | comparison | 4 | 0.833 | 0.625 | 1.000 | 0.875 | 0 |
+| voyage-faiss-filtered | metadata_filtered | 6 | 0.556 | 0.833 | 0.833 | 0.556 | 0 |
+| voyage-faiss-filtered | multi_hop | 4 | 0.583 | 0.750 | 1.000 | 0.875 | 0 |
+| voyage-faiss-filtered | simple | 10 | 0.733 | 1.000 | 1.000 | 0.833 | 0 |
 
 ## Result Interpretation
 
 | Observation | Interpretation |
 |---|---|
 | Filtered retrieval improves simple-case Precision@3 from 0.333 to 0.733 | Metadata filters remove wrong-company and wrong-year chunks before ranking. |
-| Filtered simple-case Recall@3 reaches 1.000 | Single-target questions are well-covered when ticker/year constraints are available. |
+| Filtered simple-case Recall@3 and Hit@3 reach 1.000 | Single-target questions are consistently covered when ticker/year constraints are available. |
 | Filtered comparison Precision@3 is 0.833 but Recall@3 is 0.625 | Retrieved chunks are often relevant, but top-k may cover only one side of a comparison. |
+| Filtered simple-case MRR@3 is 0.833 | Relevant evidence usually appears near the top of the ranked list. |
 | Unfiltered retrieval remains lower across most categories | Query text alone is a harder baseline for company/year-specific financial retrieval. |
 
 ## Report Outputs
@@ -126,7 +138,7 @@ Markdown reports include:
 
 | Section | Purpose |
 |---|---|
-| Benchmark Summary | Aggregate Precision@K / Recall@K by provider and case type |
+| Benchmark Summary | Aggregate Precision@K, Recall@K, Hit@K, and MRR@K by provider and case type |
 | Failure Analysis | Cases with missed evidence targets |
 | Case Results | Per-case metric details |
 
@@ -182,14 +194,6 @@ financial-rag-eval score-run `
   --out-json reports/project1_voyage_faiss_top3_unfiltered.json `
   --out-md reports/project1_voyage_faiss_top3_unfiltered.md
 ```
-
-## Tests
-
-```powershell
-pytest
-```
-
-Current status: `7 passed`.
 
 ## Limitations
 

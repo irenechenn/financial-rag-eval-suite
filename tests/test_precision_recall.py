@@ -1,4 +1,4 @@
-from financial_rag_eval.metrics import precision_at_k, recall_at_k
+from financial_rag_eval.metrics import hit_at_k, precision_at_k, recall_at_k, reciprocal_rank_at_k
 from financial_rag_eval.schemas import EvalCase, RetrievedChunk
 
 
@@ -118,3 +118,21 @@ def test_target_level_recall_counts_covered_targets() -> None:
 
     assert precision_at_k(retrieved, case, 2) == 1.0
     assert recall_at_k(retrieved, case, 2) == 0.5
+
+def test_hit_and_reciprocal_rank_at_k() -> None:
+    case = EvalCase(
+        id="case_1",
+        question="question",
+        category="simple",
+        relevant_chunk_ids=["c"],
+    )
+    retrieved = [
+        RetrievedChunk(chunk_id="a", rank=1),
+        RetrievedChunk(chunk_id="b", rank=2),
+        RetrievedChunk(chunk_id="c", rank=3),
+    ]
+
+    assert hit_at_k(retrieved, case, 2) == 0.0
+    assert reciprocal_rank_at_k(retrieved, case, 2) == 0.0
+    assert hit_at_k(retrieved, case, 3) == 1.0
+    assert reciprocal_rank_at_k(retrieved, case, 3) == 1 / 3

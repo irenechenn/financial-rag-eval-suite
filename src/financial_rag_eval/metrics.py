@@ -46,6 +46,12 @@ def _targets_for_case(case: EvalCase) -> list[RelevanceCriteria]:
     return []
 
 
+def _top_k(retrieved: list[RetrievedChunk], k: int) -> list[RetrievedChunk]:
+    if k <= 0:
+        raise ValueError("k must be positive")
+    return sorted(retrieved, key=lambda chunk: chunk.rank)[:k]
+
+
 def is_relevant(chunk: RetrievedChunk, case: EvalCase) -> bool:
     """Return whether a retrieved chunk is relevant for an eval case.
 
@@ -61,9 +67,7 @@ def is_relevant(chunk: RetrievedChunk, case: EvalCase) -> bool:
 
 
 def precision_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> float:
-    if k <= 0:
-        raise ValueError("k must be positive")
-    top_k = sorted(retrieved, key=lambda chunk: chunk.rank)[:k]
+    top_k = _top_k(retrieved, k)
     if not top_k:
         return 0.0
     relevant = sum(1 for chunk in top_k if is_relevant(chunk, case))
@@ -71,12 +75,21 @@ def precision_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> f
 
 
 def recall_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> float:
-    if k <= 0:
-        raise ValueError("k must be positive")
     total_relevant = total_relevant_count(case)
     if total_relevant == 0:
         return 0.0
     return relevant_retrieved_at_k(retrieved, case, k) / total_relevant
+
+
+def hit_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> float:
+    return 1.0 if relevant_retrieved_at_k(retrieved, case, k) > 0 else 0.0
+
+
+def reciprocal_rank_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> float:
+    for chunk in _top_k(retrieved, k):
+        if is_relevant(chunk, case):
+            return 1.0 / chunk.rank
+    return 0.0
 
 
 def relevant_retrieved_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> int:
@@ -84,7 +97,7 @@ def relevant_retrieved_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: 
 
 
 def covered_target_labels(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> list[str]:
-    top_k = sorted(retrieved, key=lambda chunk: chunk.rank)[:k]
+    top_k = _top_k(retrieved, k)
 
     if case.relevant_chunk_ids:
         retrieved_ids = {chunk.chunk_id for chunk in top_k}

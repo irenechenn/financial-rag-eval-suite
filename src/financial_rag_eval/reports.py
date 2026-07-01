@@ -7,8 +7,10 @@ from pathlib import Path
 from financial_rag_eval.metrics import (
     covered_target_labels,
     missed_target_labels,
+    hit_at_k,
     precision_at_k,
     recall_at_k,
+    reciprocal_rank_at_k,
     relevant_retrieved_at_k,
     total_relevant_count,
 )
@@ -38,6 +40,8 @@ def build_report(cases: list[EvalCase], runs: list[RetrievalRunCase], k: int) ->
                 k=k,
                 precision_at_k=precision_at_k(run.retrieved_chunks, case, k),
                 recall_at_k=recall_at_k(run.retrieved_chunks, case, k),
+                hit_at_k=hit_at_k(run.retrieved_chunks, case, k),
+                reciprocal_rank_at_k=reciprocal_rank_at_k(run.retrieved_chunks, case, k),
                 relevant_retrieved=relevant_retrieved_at_k(run.retrieved_chunks, case, k),
                 retrieved_at_k=min(len(run.retrieved_chunks), k),
                 total_relevant=total_relevant_count(case),
@@ -65,6 +69,8 @@ def _summarize(results: list[CaseMetricResult]) -> list[ReportSummaryRow]:
                 cases=cases,
                 precision_at_k=sum(item.precision_at_k for item in group) / cases,
                 recall_at_k=sum(item.recall_at_k for item in group) / cases,
+                hit_at_k=sum(item.hit_at_k for item in group) / cases,
+                mrr_at_k=sum(item.reciprocal_rank_at_k for item in group) / cases,
                 runtime_errors=sum(1 for item in group if item.runtime_error),
             )
         )
@@ -98,7 +104,7 @@ def render_markdown_report(report: EvalReport) -> str:
         "",
         "| Field | Value |",
         "|---|---|",
-        f"| Metric | Precision@{report.k} / Recall@{report.k} |",
+        f"| Metrics | Precision@{report.k}, Recall@{report.k}, Hit@{report.k}, MRR@{report.k} |",
         f"| Cases scored | {len(report.case_results)} |",
         f"| Providers | {_format_targets(providers)} |",
         f"| Case categories | {_format_targets(categories)} |",
@@ -107,20 +113,21 @@ def render_markdown_report(report: EvalReport) -> str:
         "```mermaid",
         "flowchart LR",
         "    A[\"Eval cases\"] --> B[\"Retrieval run JSONL\"]",
-        "    B --> C[\"Precision@K / Recall@K\"]",
+        "    B --> C[\"Retrieval metrics\"]",
         "    C --> D[\"Benchmark summary\"]",
         "    C --> E[\"Failure analysis\"]",
         "```",
         "",
         "## Benchmark Summary",
         "",
-        "| Provider | Case Type | Cases | Precision@K | Recall@K | Runtime Errors |",
-        "|---|---|---:|---:|---:|---:|",
+        "| Provider | Case Type | Cases | Precision@K | Recall@K | Hit@K | MRR@K | Runtime Errors |",
+        "|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     for row in report.summary:
         lines.append(
             f"| {row.provider} | {row.category} | {row.cases} | "
-            f"{row.precision_at_k:.3f} | {row.recall_at_k:.3f} | {row.runtime_errors} |"
+            f"{row.precision_at_k:.3f} | {row.recall_at_k:.3f} | "
+            f"{row.hit_at_k:.3f} | {row.mrr_at_k:.3f} | {row.runtime_errors} |"
         )
 
     lines.extend([
@@ -129,8 +136,8 @@ def render_markdown_report(report: EvalReport) -> str:
         "",
         "Cases below missed at least one expected evidence target or produced a runtime error.",
         "",
-        "| Case | Provider | Category | Recall@K | Covered Targets | Missed Targets / Error |",
-        "|---|---|---|---:|---|---|",
+        "| Case | Provider | Category | Recall@K | Hit@K | Covered Targets | Missed Targets / Error |",
+        "|---|---|---|---:|---:|---|---|",
     ])
     if failures:
         for result in failures:
@@ -138,7 +145,7 @@ def render_markdown_report(report: EvalReport) -> str:
             missed = result.runtime_error or _format_targets(result.missed_targets)
             lines.append(
                 f"| {result.case_id} | {result.provider} | {result.category} | "
-                f"{result.recall_at_k:.3f} | {covered} | {missed} |"
+                f"{result.recall_at_k:.3f} | {result.hit_at_k:.3f} | {covered} | {missed} |"
             )
     else:
         lines.append("| _None_ |  |  |  |  |  |")
@@ -147,13 +154,14 @@ def render_markdown_report(report: EvalReport) -> str:
         "",
         "## Case Results",
         "",
-        "| Case | Provider | Category | Precision@K | Recall@K | Evidence Targets Covered |",
-        "|---|---|---|---:|---:|---:|",
+        "| Case | Provider | Category | Precision@K | Recall@K | Hit@K | RR@K | Evidence Targets Covered |",
+        "|---|---|---|---:|---:|---:|---:|---:|",
     ])
     for result in report.case_results:
         lines.append(
             f"| {result.case_id} | {result.provider} | {result.category} | "
             f"{result.precision_at_k:.3f} | {result.recall_at_k:.3f} | "
+            f"{result.hit_at_k:.3f} | {result.reciprocal_rank_at_k:.3f} | "
             f"{result.relevant_retrieved}/{result.total_relevant} |"
         )
     lines.append("")
