@@ -1,0 +1,49 @@
+{"case_id":"aapl_2023_services_revenue","chunk_id":"AAPL_2023_Q1.0_r12_c2","decision":"rejected","rationale":"Preview mentions revenue and products but does not directly support Apple services revenue commentary."}
+{"case_id":"aapl_2023_services_revenue","chunk_id":"AAPL_2023_Q4.0_r15_c18","decision":"accepted","rationale":"Preview explicitly mentions record Services revenue and customer lifetime value."}
+{"case_id":"aapl_2024_services_metadata","chunk_id":"AAPL_2024_Q2.0_r17_c0","decision":"rejected","rationale":"Preview is earnings-call opening boilerplate without services revenue evidence."}
+{"case_id":"aapl_2024_services_metadata","chunk_id":"AAPL_2024_Q4.0_r19_c0","decision":"rejected","rationale":"Preview is call introduction and speaker setup without services revenue evidence."}
+{"case_id":"aapl_2024_services_metadata","chunk_id":"AAPL_2024_Q4.0_r19_c10","decision":"rejected","rationale":"Preview discusses iPhone and revenue growth question, but not services revenue evidence."}
+{"case_id":"aapl_services_2023_vs_2024","chunk_id":"AAPL_2024_Q4.0_r19_c10","decision":"rejected","rationale":"Preview does not directly support Apple 2024 services revenue commentary."}
+{"case_id":"aapl_services_vs_msft_cloud_2024","chunk_id":"AAPL_2024_Q3.0_r18_c11","decision":"accepted","rationale":"Preview directly discusses Services growth and compares performance to the prior year."}
+{"case_id":"aapl_services_vs_msft_cloud_2024","chunk_id":"AAPL_2024_Q4.0_r19_c10","decision":"rejected","rationale":"Preview focuses on iPhone and broad revenue growth, not services commentary."}
+{"case_id":"aapl_services_vs_msft_cloud_2024","chunk_id":"MSFT_2024_Q3.0_r100_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without Microsoft cloud commentary."}
+{"case_id":"amzn_2023_aws","chunk_id":"AMZN_2023_Q3.0_r35_c11","decision":"rejected","rationale":"Preview appears to discuss Amazon Business/procurement, not AWS."}
+{"case_id":"amzn_2023_aws","chunk_id":"AMZN_2023_Q4.0_r36_c14","decision":"accepted","rationale":"Preview discusses AI workloads on Trainium/Inferentia and CodeWhisperer, supporting AWS-related commentary."}
+{"case_id":"amzn_2023_aws","chunk_id":"AMZN_2023_Q4.0_r36_c15","decision":"accepted","rationale":"Preview asks about AI budget cycle and optimization theme, supporting AWS cloud commentary."}
+{"case_id":"amzn_2024_aws_metadata","chunk_id":"AMZN_2024_Q1.0_r37_c8","decision":"rejected","rationale":"Preview discusses cash flow, operating income, working capital, and capex, not AWS evidence."}
+{"case_id":"amzn_2024_aws_metadata","chunk_id":"AMZN_2024_Q3.0_r39_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without AWS evidence."}
+{"case_id":"amzn_2024_aws_metadata","chunk_id":"AMZN_2024_Q4.0_r40_c8","decision":"accepted","rationale":"Preview explicitly asks about drivers of AWS margins."}
+{"case_id":"googl_2023_advertising_metadata","chunk_id":"GOOGL_2023_Q1.0_r53_c0","decision":"rejected","rationale":"Preview is call opening boilerplate and does not include advertising evidence."}
+{"case_id":"googl_2024_advertising","chunk_id":"GOOGL_2024_Q4.0_r60_c10","decision":"accepted","rationale":"Preview directly discusses year-on-year growth in advertising revenue."}
+{"case_id":"googl_ads_vs_meta_ads_2024","chunk_id":"META_2024_Q1.0_r77_c11","decision":"rejected","rationale":"Preview discusses AI infrastructure and tax, not Meta advertising."}
+{"case_id":"googl_ads_vs_meta_ads_2024","chunk_id":"META_2024_Q4.0_r80_c18","decision":"rejected","rationale":"Preview discusses consumer experience and Reality Labs, not advertising commentary."}
+{"case_id":"meta_2023_advertising_metadata","chunk_id":"META_2023_Q4.0_r76_c18","decision":"accepted","rationale":"Preview directly discusses Chinese advertisers and advertiser spend."}
+{"case_id":"meta_2024_advertising","chunk_id":"META_2024_Q1.0_r77_c12","decision":"accepted","rationale":"Preview directly discusses advertisers, conversions API, reporting, and performance."}
+{"case_id":"meta_2024_advertising","chunk_id":"META_2024_Q4.0_r80_c18","decision":"rejected","rationale":"Preview is about consumer experience and Reality Labs, not advertising revenue or ad demand."}
+{"case_id":"msft_2023_cloud","chunk_id":"MSFT_2023_Q3.0_r96_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without cloud or Azure evidence."}
+{"case_id":"msft_2023_cloud","chunk_id":"MSFT_2023_Q3.0_r96_c15","decision":"accepted","rationale":"Preview directly discusses Copilot stack, Azure AI toolchain, and Azure OpenAI."}
+{"case_id":"msft_2024_azure_metadata","chunk_id":"MSFT_2024_Q3.0_r100_c1","decision":"accepted","rationale":"Preview reports Microsoft Cloud revenue and gives relevant 2024 cloud context."}
+{"case_id":"msft_2024_azure_metadata","chunk_id":"MSFT_2024_Q3.0_r100_c14","decision":"accepted","rationale":"Preview directly discusses Azure AI usage and enterprise workloads."}
+{"case_id":"msft_2024_cloud","chunk_id":"MSFT_2024_Q2.0_r99_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without cloud evidence."}
+{"case_id":"msft_2024_cloud","chunk_id":"MSFT_2024_Q3.0_r100_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without cloud evidence."}
+{"case_id":"msft_2024_cloud","chunk_id":"MSFT_2024_Q3.0_r100_c12","decision":"accepted","rationale":"Preview discusses demand signal, training spend, and product portfolio in cloud/AI context."}
+{"case_id":"msft_cloud_2023_vs_2024","chunk_id":"MSFT_2023_Q3.0_r96_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without cloud evidence."}
+{"case_id":"msft_cloud_2023_vs_2024","chunk_id":"MSFT_2024_Q2.0_r99_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without cloud evidence."}
+{"case_id":"msft_cloud_2023_vs_2024","chunk_id":"MSFT_2024_Q3.0_r100_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without cloud evidence."}
+{"case_id":"msft_cloud_vs_amzn_aws_2023","chunk_id":"MSFT_2023_Q2.0_r95_c15","decision":"accepted","rationale":"Preview discusses public cloud cost optimization and workloads."}
+{"case_id":"msft_cloud_vs_amzn_aws_2023","chunk_id":"MSFT_2023_Q3.0_r96_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without cloud evidence."}
+{"case_id":"msft_cloud_vs_amzn_aws_2023","chunk_id":"MSFT_2023_Q3.0_r96_c1","decision":"accepted","rationale":"Preview directly reports Microsoft Cloud annual revenue and Azure contribution."}
+{"case_id":"nvda_2023_data_center","chunk_id":"NVDA_2023_Q2.0_r115_c7","decision":"accepted","rationale":"Preview discusses supply and demand planning for NVIDIA partners, relevant to data center demand."}
+{"case_id":"nvda_2023_data_center","chunk_id":"NVDA_2023_Q3.0_r116_c1","decision":"accepted","rationale":"Preview directly discusses data center supply chain and tremendous demand."}
+{"case_id":"nvda_2023_data_center","chunk_id":"NVDA_2023_Q3.0_r116_c17","decision":"rejected","rationale":"Preview is broad closing commentary and does not directly support data center demand."}
+{"case_id":"nvda_2024_data_center","chunk_id":"NVDA_2024_Q1.0_r118_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without data center demand evidence."}
+{"case_id":"nvda_2024_data_center","chunk_id":"NVDA_2024_Q1.0_r118_c1","decision":"accepted","rationale":"Preview directly reports data center revenue and platform-driven growth."}
+{"case_id":"nvda_2024_data_center","chunk_id":"NVDA_2024_Q1.0_r118_c6","decision":"rejected","rationale":"Preview is events and IR logistics, not data center demand evidence."}
+{"case_id":"nvda_data_center_2023_vs_2024","chunk_id":"NVDA_2023_Q1.0_r114_c0","decision":"rejected","rationale":"Preview is call opening boilerplate without data center demand evidence."}
+{"case_id":"nvda_data_center_2023_vs_2024","chunk_id":"NVDA_2024_Q1.0_r118_c6","decision":"rejected","rationale":"Preview is events and IR logistics, not data center demand evidence."}
+{"case_id":"tsla_2023_margin_comment","chunk_id":"TSLA_2023_Q2.0_r133_c16","decision":"rejected","rationale":"Preview discusses affordability and demand, not gross margin or profitability."}
+{"case_id":"tsla_2023_margin_comment","chunk_id":"TSLA_2023_Q3.0_r134_c11","decision":"rejected","rationale":"Preview is investment advice style commentary and does not discuss margin/profitability."}
+{"case_id":"tsla_2024_margin_comment","chunk_id":"TSLA_2024_Q1.0_r136_c6","decision":"rejected","rationale":"Preview discusses shareholder advisory firms and governance, not margin/profitability."}
+{"case_id":"tsla_margin_2023_vs_2024","chunk_id":"TSLA_2023_Q2.0_r133_c16","decision":"rejected","rationale":"Preview discusses affordability and demand, not Tesla margin/profitability commentary."}
+{"case_id":"tsla_margin_vs_nvda_data_center_2024","chunk_id":"NVDA_2024_Q1.0_r118_c6","decision":"rejected","rationale":"Preview is events and IR logistics, not data center demand evidence."}
+{"case_id":"tsla_margin_vs_nvda_data_center_2024","chunk_id":"NVDA_2024_Q2.0_r119_c1","decision":"accepted","rationale":"Preview directly discusses data center growth drivers and cloud provider demand."}

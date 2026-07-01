@@ -1,4 +1,8 @@
-from financial_rag_eval.qrels_review import build_qrels_review_packet, render_review_packet_markdown
+from financial_rag_eval.qrels_review import (
+    apply_review_decisions,
+    build_qrels_review_packet,
+    render_review_packet_markdown,
+)
 from financial_rag_eval.schemas import EvalCase, QrelJudgment, RetrievedChunk, RetrievalRunCase
 
 
@@ -49,3 +53,35 @@ def test_build_qrels_review_packet_includes_candidate_context() -> None:
     assert "Qrels Review Packet" in markdown
     assert "[ ] `accepted` / [ ] `rejected`" in markdown
     assert "Find Apple services revenue commentary." in markdown
+
+
+def test_apply_review_decisions_updates_qrel_statuses(tmp_path) -> None:
+    qrels_path = tmp_path / "qrels.jsonl"
+    decisions_path = tmp_path / "decisions.jsonl"
+    out_jsonl = tmp_path / "reviewed.jsonl"
+    out_md = tmp_path / "reviewed.md"
+
+    qrels_path.write_text(
+        '{"case_id":"case_1","chunk_id":"a","relevance":1,"status":"candidate"}\n'
+        '{"case_id":"case_1","chunk_id":"b","relevance":1,"status":"candidate"}\n',
+        encoding="utf-8",
+    )
+    decisions_path.write_text(
+        '{"case_id":"case_1","chunk_id":"a","decision":"accepted","rationale":"direct evidence"}\n',
+        encoding="utf-8",
+    )
+
+    reviewed = apply_review_decisions(
+        qrels_path=qrels_path,
+        decisions_path=decisions_path,
+        out_jsonl=out_jsonl,
+        out_md=out_md,
+        source="assisted_review",
+    )
+
+    assert reviewed[0].status == "accepted"
+    assert reviewed[0].source == "assisted_review"
+    assert "direct evidence" in reviewed[0].notes
+    assert reviewed[1].status == "candidate"
+    assert out_jsonl.exists()
+    assert out_md.exists()

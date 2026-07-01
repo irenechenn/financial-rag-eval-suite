@@ -1,6 +1,6 @@
 # Pooled Relevance Judgments
 
-This file summarizes pooled candidate qrels generated from retrieval results. Candidate judgments require human review before they should be treated as gold labels.
+This file summarizes pooled relevance judgments. Judgments with `candidate` status require human review before they should be treated as gold labels.
 
 ## Summary
 

@@ -13,7 +13,8 @@ from financial_rag_eval.labeling import generate_label_candidates
 from financial_rag_eval.project1_runner import run_project1_retrieval_sync
 from financial_rag_eval.qrels import export_candidate_qrels
 from financial_rag_eval.qrels_audit import audit_qrels
-from financial_rag_eval.qrels_review import make_review_packet
+from financial_rag_eval.qrels_judge import judge_qrels
+from financial_rag_eval.qrels_review import apply_review_decisions, make_review_packet
 from financial_rag_eval.qrels_scoring import score_qrels_run
 from financial_rag_eval.reports import build_report, write_json_report, write_markdown_report
 
@@ -85,7 +86,7 @@ def main() -> None:
     audit.add_argument("--out-json", required=True)
     audit.add_argument("--out-md", required=True)
 
-    review = subparsers.add_parser("make-review-packet", help="Create a qrels human-review checklist.")
+    review = subparsers.add_parser("make-review-packet", help="Create a qrels review checklist.")
     review.add_argument("--cases", required=True)
     review.add_argument("--run", required=True)
     review.add_argument("--qrels", required=True)
@@ -98,6 +99,27 @@ def main() -> None:
     )
     review.add_argument("--out-jsonl", required=True)
     review.add_argument("--out-md", required=True)
+
+    apply_review = subparsers.add_parser("apply-review-decisions", help="Apply qrels review decisions to qrels.")
+    apply_review.add_argument("--qrels", required=True)
+    apply_review.add_argument("--decisions", required=True)
+    apply_review.add_argument("--source", default="assisted_review")
+    apply_review.add_argument("--out-jsonl", required=True)
+    apply_review.add_argument("--out-md", required=True)
+
+    judge = subparsers.add_parser("judge-qrels", help="Generate qrels review decisions with a rubric judge.")
+    judge.add_argument("--cases", required=True)
+    judge.add_argument("--run", required=True)
+    judge.add_argument("--qrels", required=True)
+    judge.add_argument(
+        "--judgment-status",
+        action="append",
+        choices=["candidate", "accepted", "rejected"],
+        default=None,
+        help="Qrel status to judge. Defaults to candidate. Repeat to include multiple statuses.",
+    )
+    judge.add_argument("--out-jsonl", required=True)
+    judge.add_argument("--out-md", required=True)
 
     args = parser.parse_args()
 
@@ -214,6 +236,38 @@ def main() -> None:
             statuses=set(args.judgment_status or ["candidate"]),
         )
         print(f"Wrote {len(items)} qrels review items")
+        print(f"Wrote {args.out_jsonl}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "apply-review-decisions":
+        reviewed = apply_review_decisions(
+            qrels_path=args.qrels,
+            decisions_path=args.decisions,
+            out_jsonl=args.out_jsonl,
+            out_md=args.out_md,
+            source=args.source,
+        )
+        accepted = sum(1 for item in reviewed if item.status == "accepted")
+        rejected = sum(1 for item in reviewed if item.status == "rejected")
+        pending = sum(1 for item in reviewed if item.status == "candidate")
+        print(f"Applied review decisions ({accepted} accepted, {rejected} rejected, {pending} pending)")
+        print(f"Wrote {args.out_jsonl}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "judge-qrels":
+        decisions = judge_qrels(
+            cases_path=args.cases,
+            run_path=args.run,
+            qrels_path=args.qrels,
+            out_jsonl=args.out_jsonl,
+            out_md=args.out_md,
+            statuses=set(args.judgment_status or ["candidate"]),
+        )
+        accepted = sum(1 for item in decisions if item.decision == "accepted")
+        rejected = sum(1 for item in decisions if item.decision == "rejected")
+        print(f"Generated {len(decisions)} judge decisions ({accepted} accepted, {rejected} rejected)")
         print(f"Wrote {args.out_jsonl}")
         print(f"Wrote {args.out_md}")
         return

@@ -22,7 +22,7 @@ Each qrel record contains:
 
 1. Run a retrieval benchmark.
 2. Export pooled candidate qrels from the top-k results.
-3. Review each candidate chunk.
+3. Review each candidate chunk with a human reviewer, rubric judge, or independent LLM judge.
 4. Mark reviewed judgments as `accepted` or `rejected`.
 5. Promote accepted qrels into stricter gold labels or use them in a qrels-based scorer.
 
@@ -79,7 +79,7 @@ financial-rag-eval audit-qrels `
 
 The audit checks status counts, relevance-grade counts, source counts, category coverage, unlabeled cases, unknown case IDs, and duplicate judgments.
 
-## Human Review Packet
+## Review Packet
 
 Review packets turn candidate qrels into a checklist with the original question, chunk metadata, matched targets, and text preview:
 
@@ -93,7 +93,38 @@ financial-rag-eval make-review-packet `
   --out-md qrels/retrieval_v1_review_packet.md
 ```
 
-This packet is meant for human review. Updating qrel statuses to `accepted` or `rejected` should happen only after inspecting whether the chunk directly supports the matched target.
+This packet is meant for review by a human, rubric judge, or independent LLM judge. Updating qrel statuses to `accepted` or `rejected` should happen only after inspecting whether the chunk directly supports the matched target.
+
+## Judge Review
+
+The local rubric judge is a deterministic baseline for the review loop:
+
+```powershell
+financial-rag-eval judge-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --judgment-status candidate `
+  --out-jsonl qrels/retrieval_v1_rubric_judge_decisions.jsonl `
+  --out-md qrels/retrieval_v1_rubric_judge_decisions.md
+```
+
+Each judge decision records `decision`, `confidence`, `rationale`, `judge_model`, and `rubric_version`. The same schema can be used by a stronger independent LLM judge.
+
+## Applying Review Decisions
+
+Review decisions can be applied to pooled qrels to produce a mixed accepted/rejected/candidate qrels file:
+
+```powershell
+financial-rag-eval apply-review-decisions `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --decisions qrels/retrieval_v1_assisted_review.jsonl `
+  --source assisted_review `
+  --out-jsonl qrels/retrieval_v1_assisted_reviewed_qrels.jsonl `
+  --out-md qrels/retrieval_v1_assisted_reviewed_qrels.md
+```
+
+The included assisted review seed is useful for exercising the full qrels workflow. It should be treated as model-assisted labeling, not production benchmark labels.
 
 ## Why Separate Qrels Matter
 

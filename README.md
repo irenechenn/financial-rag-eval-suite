@@ -25,7 +25,7 @@ flowchart LR
 | Dataset | 24 labeled retrieval cases |
 | Retrieval metrics | Precision@K, Recall@K, Hit@K, MRR@K |
 | Labels | Target-level ticker/year/topic relevance criteria |
-| Qrels | Pooled candidate relevance judgments for human review |
+| Qrels | Pooled candidate relevance judgments with review provenance |
 | Reports | JSON and Markdown |
 | Failure analysis | Covered and missed evidence targets |
 | Agent trace metrics | Tool call recall, argument accuracy, sequence pass |
@@ -82,7 +82,7 @@ flowchart TD
 | [`docs/DATASET.md`](docs/DATASET.md) | Dataset schema and labeling policy |
 | [`docs/AGENT_TRACE_EVAL.md`](docs/AGENT_TRACE_EVAL.md) | Tool-call and argument-level agent trace evaluation |
 | [`docs/REGRESSION_COMPARISON.md`](docs/REGRESSION_COMPARISON.md) | Baseline-vs-candidate run comparison |
-| [`docs/LABEL_HARDENING.md`](docs/LABEL_HARDENING.md) | Human-review workflow for promoting target-level matches into explicit chunk labels |
+| [`docs/LABEL_HARDENING.md`](docs/LABEL_HARDENING.md) | Review workflow for promoting target-level matches into explicit chunk labels |
 | [`docs/QRELS.md`](docs/QRELS.md) | Pooled relevance judgment format and review workflow |
 
 ## Benchmark Results
@@ -141,11 +141,18 @@ Generated Markdown reports are available here:
 | [`project1_voyage_faiss_top3_unfiltered.md`](reports/project1_voyage_faiss_top3_unfiltered.md) | Pure semantic retrieval baseline |
 | [`project1_voyage_faiss_top3_tool_filtered.md`](reports/project1_voyage_faiss_top3_tool_filtered.md) | Metadata-aware filtered retrieval run |
 | [`project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md) | Filtered run scored against pooled candidate qrels |
+| [`project1_voyage_faiss_top3_tool_filtered_qrels_assisted_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_assisted_accepted.md) | Filtered run scored against assisted accepted qrels |
+| [`project1_voyage_faiss_top3_tool_filtered_qrels_rubric_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_rubric_accepted.md) | Filtered run scored against local rubric-judge accepted qrels |
 | [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
 | [`tool_filtered_top3.md`](label_candidates/tool_filtered_top3.md) | Candidate `relevant_chunk_ids` for human relevance review |
 | [`retrieval_v1_pooled_top3.md`](qrels/retrieval_v1_pooled_top3.md) | Pooled candidate qrels generated from the filtered top-3 run |
 | [`retrieval_v1_pooled_top3_audit.md`](qrels/retrieval_v1_pooled_top3_audit.md) | Qrels coverage and integrity audit |
 | [`retrieval_v1_review_packet.md`](qrels/retrieval_v1_review_packet.md) | Human-review checklist for candidate qrels |
+| [`retrieval_v1_assisted_reviewed_qrels.md`](qrels/retrieval_v1_assisted_reviewed_qrels.md) | Assisted seed decisions applied to pooled qrels |
+| [`retrieval_v1_assisted_reviewed_qrels_audit.md`](qrels/retrieval_v1_assisted_reviewed_qrels_audit.md) | Coverage and integrity audit for assisted reviewed qrels |
+| [`retrieval_v1_rubric_judge_decisions.md`](qrels/retrieval_v1_rubric_judge_decisions.md) | Local rubric judge decisions with confidence and rationale |
+| [`retrieval_v1_rubric_judged_qrels.md`](qrels/retrieval_v1_rubric_judged_qrels.md) | Rubric judge decisions applied to pooled qrels |
+| [`retrieval_v1_rubric_judged_qrels_audit.md`](qrels/retrieval_v1_rubric_judged_qrels_audit.md) | Coverage and integrity audit for rubric judged qrels |
 
 Markdown reports include:
 
@@ -271,6 +278,33 @@ financial-rag-eval make-review-packet `
   --out-md qrels/retrieval_v1_review_packet.md
 ```
 
+## Apply Review Decisions
+
+```powershell
+financial-rag-eval apply-review-decisions `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --decisions qrels/retrieval_v1_assisted_review.jsonl `
+  --source assisted_review `
+  --out-jsonl qrels/retrieval_v1_assisted_reviewed_qrels.jsonl `
+  --out-md qrels/retrieval_v1_assisted_reviewed_qrels.md
+```
+
+The assisted review file is a seed labeling artifact, not a substitute for independent human review.
+
+## Judge Qrels
+
+```powershell
+financial-rag-eval judge-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --judgment-status candidate `
+  --out-jsonl qrels/retrieval_v1_rubric_judge_decisions.jsonl `
+  --out-md qrels/retrieval_v1_rubric_judge_decisions.md
+```
+
+The local rubric judge is a deterministic baseline for the review loop. A production setup can replace it with an independent LLM judge and keep the same decision schema.
+
 ## Score A Retrieval Run
 
 ```powershell
@@ -285,7 +319,7 @@ financial-rag-eval score-run `
 ## Limitations
 
 - The v1 dataset is small and should be treated as a focused retrieval benchmark, not a broad production benchmark.
-- Target-level metadata/term labels are inspectable, but stable human-verified `relevant_chunk_ids` would make the benchmark stricter.
+- Target-level metadata/term labels are inspectable, but reviewed qrels with independent spot checks would make the benchmark stricter.
 - Precision@K and Recall@K evaluate retrieval quality, not final answer correctness.
 - The filtered benchmark uses expected metadata when available, so it should be interpreted separately from the unfiltered semantic baseline.
 - The current scope does not include dashboarding, nDCG, or large-scale monitoring.
