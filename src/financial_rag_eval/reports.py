@@ -5,6 +5,8 @@ from collections import defaultdict
 from pathlib import Path
 
 from financial_rag_eval.metrics import (
+    covered_target_labels,
+    missed_target_labels,
     precision_at_k,
     recall_at_k,
     relevant_retrieved_at_k,
@@ -39,6 +41,8 @@ def build_report(cases: list[EvalCase], runs: list[RetrievalRunCase], k: int) ->
                 relevant_retrieved=relevant_retrieved_at_k(run.retrieved_chunks, case, k),
                 retrieved_at_k=min(len(run.retrieved_chunks), k),
                 total_relevant=total_relevant_count(case),
+                covered_targets=covered_target_labels(run.retrieved_chunks, case, k),
+                missed_targets=missed_target_labels(run.retrieved_chunks, case, k),
                 runtime_error=run.runtime_error,
             )
         )
@@ -101,6 +105,27 @@ def render_markdown_report(report: EvalReport) -> str:
 
     lines.extend([
         "",
+        "## Failure Analysis",
+        "",
+        "Cases below missed at least one expected evidence target.",
+        "",
+        "| Case | Provider | Category | Recall@K | Covered Targets | Missed Targets |",
+        "|---|---|---|---:|---|---|",
+    ])
+    failures = [result for result in report.case_results if result.missed_targets or result.runtime_error]
+    if failures:
+        for result in failures:
+            covered = _format_targets(result.covered_targets)
+            missed = result.runtime_error or _format_targets(result.missed_targets)
+            lines.append(
+                f"| {result.case_id} | {result.provider} | {result.category} | "
+                f"{result.recall_at_k:.3f} | {covered} | {missed} |"
+            )
+    else:
+        lines.append("| _None_ |  |  |  |  |  |")
+
+    lines.extend([
+        "",
         "## Case Results",
         "",
         "| Case | Provider | Category | Precision@K | Recall@K | Relevant Retrieved |",
@@ -114,3 +139,9 @@ def render_markdown_report(report: EvalReport) -> str:
         )
     lines.append("")
     return "\n".join(lines)
+
+
+def _format_targets(targets: list[str]) -> str:
+    if not targets:
+        return "-"
+    return "; ".join(targets)

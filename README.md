@@ -14,6 +14,7 @@ It intentionally keeps the MVP small:
 - Precision@K and Recall@K
 - JSON report output
 - Markdown report output
+- failure analysis with covered and missed evidence targets
 - benchmark tables for GitHub/interview review
 
 It does not include a dashboard, nDCG, production monitoring, or a large-scale benchmark suite.
@@ -77,7 +78,7 @@ This run applies expected ticker/year filters when the case has a single expecte
 
 ## Interpretation
 
-The filtered run scores higher because metadata constraints remove wrong-company and wrong-year chunks before ranking. That is expected and useful: Project 1's agent is designed to call retrieval with ticker/year arguments when it can infer them. The target-level recall scores also show a useful limitation: comparison questions may retrieve strong evidence for one side while missing the second required evidence target.
+The filtered run scores higher because metadata constraints remove wrong-company and wrong-year chunks before ranking. That is expected and useful: Project 1's agent is designed to call retrieval with ticker/year arguments when it can infer them. The target-level recall scores also show a useful limitation: comparison questions may retrieve strong evidence for one side while missing the second required evidence target. The Markdown reports include a Failure Analysis section that lists covered and missed targets for each failed case.
 
 The unfiltered run is still useful as a harder semantic retrieval baseline. It shows where the query alone is not enough and where metadata-aware tool calls matter.
 
@@ -134,7 +135,7 @@ financial-rag-eval score-run `
 pytest
 ```
 
-Current status: `6 passed`.
+Current status: `7 passed`.
 
 ## Limitations
 

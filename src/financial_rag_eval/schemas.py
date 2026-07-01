@@ -58,6 +58,8 @@ class CaseMetricResult(BaseModel):
     relevant_retrieved: int
     retrieved_at_k: int
     total_relevant: int
+    covered_targets: list[str] = Field(default_factory=list)
+    missed_targets: list[str] = Field(default_factory=list)
     runtime_error: str | None = None
 
 

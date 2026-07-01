@@ -20,6 +20,20 @@ def _matches_criteria(chunk: RetrievedChunk, criteria: RelevanceCriteria) -> boo
     return bool(criteria.tickers or criteria.years or criteria.required_terms)
 
 
+def _target_label(target: RelevanceCriteria, index: int) -> str:
+    label = getattr(target, "label", "")
+    if label:
+        return label
+    parts = []
+    if target.tickers:
+        parts.append("/".join(target.tickers))
+    if target.years:
+        parts.append("/".join(str(year) for year in target.years))
+    if target.required_terms:
+        parts.append("+".join(target.required_terms))
+    return " ".join(parts) if parts else f"target_{index}"
+
+
 def _targets_for_case(case: EvalCase) -> list[RelevanceCriteria]:
     if case.relevance_targets:
         return list(case.relevance_targets)
@@ -66,17 +80,35 @@ def recall_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> floa
 
 
 def relevant_retrieved_at_k(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> int:
+    return len(covered_target_labels(retrieved, case, k))
+
+
+def covered_target_labels(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> list[str]:
     top_k = sorted(retrieved, key=lambda chunk: chunk.rank)[:k]
 
     if case.relevant_chunk_ids:
         retrieved_ids = {chunk.chunk_id for chunk in top_k}
-        return len(set(case.relevant_chunk_ids) & retrieved_ids)
+        return sorted(set(case.relevant_chunk_ids) & retrieved_ids)
 
-    covered = 0
-    for target in _targets_for_case(case):
+    covered: list[str] = []
+    for index, target in enumerate(_targets_for_case(case), start=1):
         if any(_matches_criteria(chunk, target) for chunk in top_k):
-            covered += 1
+            covered.append(_target_label(target, index))
     return covered
+
+
+def missed_target_labels(retrieved: list[RetrievedChunk], case: EvalCase, k: int) -> list[str]:
+    if case.relevant_chunk_ids:
+        covered = set(covered_target_labels(retrieved, case, k))
+        return sorted(set(case.relevant_chunk_ids) - covered)
+
+    covered = set(covered_target_labels(retrieved, case, k))
+    missed: list[str] = []
+    for index, target in enumerate(_targets_for_case(case), start=1):
+        label = _target_label(target, index)
+        if label not in covered:
+            missed.append(label)
+    return missed
 
 
 def total_relevant_count(case: EvalCase) -> int:
