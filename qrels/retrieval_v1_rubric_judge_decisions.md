@@ -1,6 +1,6 @@
 # Qrels Judge Decisions
 
-These decisions were produced by a local rubric judge. They are useful for exercising the judge-review workflow and should be spot-checked before being treated as final benchmark labels.
+These decisions were produced by an independent qrels judge. They are useful for exercising the judge-review workflow and should be spot-checked before being treated as production benchmark labels.
 
 ## Rubric
 

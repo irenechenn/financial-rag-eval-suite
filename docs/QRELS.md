@@ -111,6 +111,31 @@ financial-rag-eval judge-qrels `
 
 Each judge decision records `decision`, `confidence`, `rationale`, `judge_model`, and `rubric_version`. The same schema can be used by a stronger independent LLM judge.
 
+Claude judge example:
+
+```powershell
+financial-rag-eval judge-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --judge-provider claude `
+  --judgment-status candidate `
+  --out-jsonl qrels/retrieval_v1_claude_judge_decisions.jsonl `
+  --out-md qrels/retrieval_v1_claude_judge_decisions.md
+```
+
+Judge agreement reports compare decision consistency across judges:
+
+```powershell
+financial-rag-eval compare-judges `
+  --baseline qrels/retrieval_v1_rubric_judge_decisions.jsonl `
+  --candidate qrels/retrieval_v1_claude_judge_decisions.jsonl `
+  --baseline-name local_rubric_judge_v1 `
+  --candidate-name claude_judge `
+  --out-json qrels/rubric_vs_claude_judge_agreement.json `
+  --out-md qrels/rubric_vs_claude_judge_agreement.md
+```
+
 ## Applying Review Decisions
 
 Review decisions can be applied to pooled qrels to produce a mixed accepted/rejected/candidate qrels file:

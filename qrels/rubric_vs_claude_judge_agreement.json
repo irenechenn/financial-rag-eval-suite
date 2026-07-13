@@ -1,0 +1,42 @@
+{
+  "agreement_rate": 0.9387755102040817,
+  "agreements": 46,
+  "baseline_name": "local_rubric_judge_v1",
+  "baseline_only": [],
+  "candidate_name": "claude_judge",
+  "candidate_only": [],
+  "deltas": [
+    {
+      "baseline_confidence": 0.85,
+      "baseline_decision": "accepted",
+      "baseline_rationale": "Preview contains the required target terms and is not call-opening boilerplate.",
+      "candidate_confidence": 0.85,
+      "candidate_decision": "rejected",
+      "candidate_rationale": "This chunk is an analyst's question referencing Services revenue in passing, not a substantive comment or data point on Apple's 2023 services revenue itself.",
+      "case_id": "aapl_2023_services_revenue",
+      "chunk_id": "AAPL_2023_Q4.0_r15_c18"
+    },
+    {
+      "baseline_confidence": 0.9,
+      "baseline_decision": "rejected",
+      "baseline_rationale": "Preview appears to be call-opening or logistics text rather than evidence.",
+      "candidate_confidence": 0.85,
+      "candidate_decision": "accepted",
+      "candidate_rationale": "The chunk directly discusses AWS operating margins for Amazon, matching the AMZN 2024 AWS target.",
+      "case_id": "amzn_2024_aws_metadata",
+      "chunk_id": "AMZN_2024_Q4.0_r40_c8"
+    },
+    {
+      "baseline_confidence": 0.75,
+      "baseline_decision": "rejected",
+      "baseline_rationale": "Preview does not directly support the matched target; missing cloud.",
+      "candidate_confidence": 0.7,
+      "candidate_decision": "accepted",
+      "candidate_rationale": "The chunk discusses scaling cloud/AI infrastructure spend based on demand signals, which directly relates to Microsoft's 2024 cloud commentary on capacity and growth strategy.",
+      "case_id": "msft_2024_cloud",
+      "chunk_id": "MSFT_2024_Q3.0_r100_c12"
+    }
+  ],
+  "disagreements": 3,
+  "shared_decisions": 49
+}

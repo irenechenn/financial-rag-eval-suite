@@ -9,6 +9,7 @@ from financial_rag_eval.compare import (
     write_comparison_markdown,
 )
 from financial_rag_eval.datasets import load_cases, load_retrieval_run
+from financial_rag_eval.judge_agreement import compare_judge_files
 from financial_rag_eval.labeling import generate_label_candidates
 from financial_rag_eval.project1_runner import run_project1_retrieval_sync
 from financial_rag_eval.qrels import export_candidate_qrels
@@ -107,10 +108,12 @@ def main() -> None:
     apply_review.add_argument("--out-jsonl", required=True)
     apply_review.add_argument("--out-md", required=True)
 
-    judge = subparsers.add_parser("judge-qrels", help="Generate qrels review decisions with a rubric judge.")
+    judge = subparsers.add_parser("judge-qrels", help="Generate qrels review decisions with a judge provider.")
     judge.add_argument("--cases", required=True)
     judge.add_argument("--run", required=True)
     judge.add_argument("--qrels", required=True)
+    judge.add_argument("--judge-provider", choices=["rubric", "claude"], default="rubric")
+    judge.add_argument("--judge-model", default=None)
     judge.add_argument(
         "--judgment-status",
         action="append",
@@ -120,6 +123,14 @@ def main() -> None:
     )
     judge.add_argument("--out-jsonl", required=True)
     judge.add_argument("--out-md", required=True)
+
+    judge_agreement = subparsers.add_parser("compare-judges", help="Compare two qrels judge decision files.")
+    judge_agreement.add_argument("--baseline", required=True)
+    judge_agreement.add_argument("--candidate", required=True)
+    judge_agreement.add_argument("--baseline-name", default="baseline")
+    judge_agreement.add_argument("--candidate-name", default="candidate")
+    judge_agreement.add_argument("--out-json", required=True)
+    judge_agreement.add_argument("--out-md", required=True)
 
     args = parser.parse_args()
 
@@ -264,11 +275,30 @@ def main() -> None:
             out_jsonl=args.out_jsonl,
             out_md=args.out_md,
             statuses=set(args.judgment_status or ["candidate"]),
+            provider=args.judge_provider,
+            model=args.judge_model,
         )
         accepted = sum(1 for item in decisions if item.decision == "accepted")
         rejected = sum(1 for item in decisions if item.decision == "rejected")
         print(f"Generated {len(decisions)} judge decisions ({accepted} accepted, {rejected} rejected)")
         print(f"Wrote {args.out_jsonl}")
+        print(f"Wrote {args.out_md}")
+        return
+
+    if args.command == "compare-judges":
+        report = compare_judge_files(
+            baseline_path=args.baseline,
+            candidate_path=args.candidate,
+            baseline_name=args.baseline_name,
+            candidate_name=args.candidate_name,
+            out_json=args.out_json,
+            out_md=args.out_md,
+        )
+        print(
+            f"Compared {report.shared_decisions} shared judge decisions "
+            f"({report.agreement_rate:.3f} agreement)"
+        )
+        print(f"Wrote {args.out_json}")
         print(f"Wrote {args.out_md}")
         return
 

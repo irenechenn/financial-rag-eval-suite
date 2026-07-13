@@ -143,6 +143,7 @@ Generated Markdown reports are available here:
 | [`project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md) | Filtered run scored against pooled candidate qrels |
 | [`project1_voyage_faiss_top3_tool_filtered_qrels_assisted_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_assisted_accepted.md) | Filtered run scored against assisted accepted qrels |
 | [`project1_voyage_faiss_top3_tool_filtered_qrels_rubric_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_rubric_accepted.md) | Filtered run scored against local rubric-judge accepted qrels |
+| [`project1_voyage_faiss_top3_tool_filtered_qrels_claude_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_claude_accepted.md) | Filtered run scored against Claude-judge accepted qrels |
 | [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
 | [`tool_filtered_top3.md`](label_candidates/tool_filtered_top3.md) | Candidate `relevant_chunk_ids` for human relevance review |
 | [`retrieval_v1_pooled_top3.md`](qrels/retrieval_v1_pooled_top3.md) | Pooled candidate qrels generated from the filtered top-3 run |
@@ -153,6 +154,10 @@ Generated Markdown reports are available here:
 | [`retrieval_v1_rubric_judge_decisions.md`](qrels/retrieval_v1_rubric_judge_decisions.md) | Local rubric judge decisions with confidence and rationale |
 | [`retrieval_v1_rubric_judged_qrels.md`](qrels/retrieval_v1_rubric_judged_qrels.md) | Rubric judge decisions applied to pooled qrels |
 | [`retrieval_v1_rubric_judged_qrels_audit.md`](qrels/retrieval_v1_rubric_judged_qrels_audit.md) | Coverage and integrity audit for rubric judged qrels |
+| [`retrieval_v1_claude_judge_decisions.md`](qrels/retrieval_v1_claude_judge_decisions.md) | Claude judge decisions with confidence and rationale |
+| [`retrieval_v1_claude_judged_qrels.md`](qrels/retrieval_v1_claude_judged_qrels.md) | Claude judge decisions applied to pooled qrels |
+| [`retrieval_v1_claude_judged_qrels_audit.md`](qrels/retrieval_v1_claude_judged_qrels_audit.md) | Coverage and integrity audit for Claude judged qrels |
+| [`rubric_vs_claude_judge_agreement.md`](qrels/rubric_vs_claude_judge_agreement.md) | Agreement and disagreement analysis between rubric and Claude judges |
 
 Markdown reports include:
 
@@ -304,6 +309,31 @@ financial-rag-eval judge-qrels `
 ```
 
 The local rubric judge is a deterministic baseline for the review loop. A production setup can replace it with an independent LLM judge and keep the same decision schema.
+
+Claude judge run:
+
+```powershell
+financial-rag-eval judge-qrels `
+  --cases eval_cases/retrieval_v1.jsonl `
+  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
+  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
+  --judge-provider claude `
+  --judgment-status candidate `
+  --out-jsonl qrels/retrieval_v1_claude_judge_decisions.jsonl `
+  --out-md qrels/retrieval_v1_claude_judge_decisions.md
+```
+
+Judge agreement:
+
+```powershell
+financial-rag-eval compare-judges `
+  --baseline qrels/retrieval_v1_rubric_judge_decisions.jsonl `
+  --candidate qrels/retrieval_v1_claude_judge_decisions.jsonl `
+  --baseline-name local_rubric_judge_v1 `
+  --candidate-name claude_judge `
+  --out-json qrels/rubric_vs_claude_judge_agreement.json `
+  --out-md qrels/rubric_vs_claude_judge_agreement.md
+```
 
 ## Score A Retrieval Run
 
