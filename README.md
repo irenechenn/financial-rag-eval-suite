@@ -1,37 +1,72 @@
 # Financial RAG Eval Suite
 
-Companion retrieval evaluation suite for [`financial-rag-engine`](https://github.com/irenechenn/financial-rag-engine).
+Companion evaluation system for [`financial-rag-engine`](https://github.com/irenechenn/financial-rag-engine).
 
-This project evaluates whether a financial RAG retriever returns the right earnings-call transcript evidence. It uses labeled retrieval cases, Precision@K, Recall@K, Hit@K, MRR@K, target-level evidence coverage, deterministic agent trace metrics, and JSON/Markdown reports with failure analysis.
+This project evaluates whether a financial RAG retriever returns the right earnings-call transcript evidence. It includes retrieval metrics, qrels-based relevance judgments, judge-review workflows, regression comparison, agent trace checks, and JSON/Markdown benchmark reports.
 
-## System Overview
+## What It Evaluates
+
+| Layer | Evaluation Coverage |
+|---|---|
+| Retrieval quality | Precision@K, Recall@K, Hit@K, MRR@K |
+| Evidence coverage | Target-level ticker/year/topic matching |
+| Qrels workflow | Pooled qrels, qrels audit, qrels scoring |
+| Judge review | Local rubric judge and Claude judge decisions |
+| Judge reliability | Rubric-vs-Claude agreement and disagreement analysis |
+| Agent traces | Tool-call recall, argument accuracy, sequence pass |
+| Regression testing | Baseline-vs-candidate summary and case-level deltas |
+
+The base system is Project 1's Voyage + FAISS retrieval layer. This repository focuses on evaluation infrastructure rather than implementing another RAG engine.
+
+## Evaluation Pipeline
 
 ```mermaid
 flowchart LR
-    A["Eval cases\nquestion + expected evidence targets"] --> B["Project 1 runner\nFAISS + Voyage retrieval"]
-    B --> C["Retrieval run JSONL\ntop-k chunks + metadata"]
-    C --> D["Metric engine\nPrecision@K + Recall@K + Hit@K + MRR@K"]
-    D --> E["Reports\nJSON + Markdown"]
-    E --> F["Failure analysis\ncovered vs missed targets"]
+    A["Eval cases\nquestions + evidence targets"] --> B["Project 1 retrieval run\nFAISS + Voyage"]
+    B --> C["Top-k chunks\nchunk IDs + metadata + text"]
+    C --> D["Retrieval metrics\nPrecision / Recall / Hit / MRR"]
+    C --> E["Pooled qrels\ncandidate relevance judgments"]
+    E --> F["Judge review\nrubric judge / Claude judge"]
+    F --> G["Accepted qrels\nreviewed relevance labels"]
+    G --> H["Qrels benchmark\naccepted-label scoring"]
+    F --> I["Judge agreement\nrubric vs Claude"]
 ```
 
-## Evaluation Scope
+## Key Results
 
-| Component | Current Scope |
-|---|---|
-| Base system | `financial-rag-engine` retrieval layer |
-| Embeddings | Voyage finance embeddings |
-| Vector index | FAISS `IndexFlatIP` over L2-normalized vectors |
-| Dataset | 24 labeled retrieval cases |
-| Retrieval metrics | Precision@K, Recall@K, Hit@K, MRR@K |
-| Labels | Target-level ticker/year/topic relevance criteria |
-| Qrels | Pooled candidate relevance judgments with review provenance |
-| Reports | JSON and Markdown |
-| Failure analysis | Covered and missed evidence targets |
-| Agent trace metrics | Tool call recall, argument accuracy, sequence pass |
-| Regression comparison | Summary deltas and case-level changes across runs |
+### Target-Label Retrieval Benchmark
 
-The benchmark tables below evaluate retrieval quality. The agent trace module adds deterministic tool-use checks, but the project does not yet evaluate final answer generation, citation quality, or end-to-end semantic correctness.
+Real Project 1 retrieval run, `top_k=3`, Voyage finance embeddings, FAISS `IndexFlatIP` over L2-normalized vectors.
+
+| Run | Case Type | Cases | Precision@3 | Recall@3 | Hit@3 | MRR@3 |
+|---|---|---:|---:|---:|---:|---:|
+| Unfiltered semantic | simple | 10 | 0.333 | 0.700 | 0.700 | 0.600 |
+| Metadata-filtered | simple | 10 | 0.733 | 1.000 | 1.000 | 0.833 |
+| Unfiltered semantic | comparison | 4 | 0.417 | 0.500 | 1.000 | 0.583 |
+| Metadata-filtered | comparison | 4 | 0.833 | 0.625 | 1.000 | 0.875 |
+
+Metadata-aware retrieval improves simple-case Precision@3 from `0.333` to `0.733` and simple-case Recall@3 from `0.700` to `1.000`.
+
+### Claude-Judged Qrels Benchmark
+
+The Claude judge reviewed 49 pooled qrels and produced 14 accepted judgments and 35 rejected judgments. The table below scores the same filtered retrieval run using only Claude-accepted qrels.
+
+| Provider | Case Type | Cases | Precision@3 | Recall@3 | Hit@3 | MRR@3 |
+|---|---|---:|---:|---:|---:|---:|
+| voyage-faiss-filtered | simple | 10 | 0.233 | 0.700 | 0.700 | 0.350 |
+| voyage-faiss-filtered | metadata_filtered | 6 | 0.167 | 0.500 | 0.500 | 0.306 |
+| voyage-faiss-filtered | multi_hop | 4 | 0.000 | 0.000 | 0.000 | 0.000 |
+| voyage-faiss-filtered | comparison | 4 | 0.333 | 0.750 | 0.750 | 0.458 |
+
+Claude-accepted qrels are stricter than target-level labels. Some cases remain unlabeled because the judge rejected all pooled candidates for that case; those cases are surfaced explicitly in the report.
+
+### Judge Agreement
+
+| Baseline | Candidate | Shared Decisions | Agreements | Disagreements | Agreement Rate |
+|---|---|---:|---:|---:|---:|
+| local_rubric_judge_v1 | claude_judge | 49 | 46 | 3 | 0.939 |
+
+The agreement report includes the three disagreement cases and each judge's rationale.
 
 ## Dataset
 
@@ -44,14 +79,7 @@ Evaluation cases live in [`eval_cases/retrieval_v1.jsonl`](eval_cases/retrieval_
 | multi_hop | 4 | Same company across multiple years |
 | comparison | 4 | Multiple companies or evidence targets |
 
-Target-level labels make multi-hop and comparison cases stricter. For example, a Microsoft-vs-Amazon comparison can require both of these targets:
-
-```text
-MSFT 2023 cloud
-AMZN 2023 AWS
-```
-
-Retrieving only one side receives partial Recall@K.
+Target-level labels make multi-hop and comparison cases stricter. A Microsoft-vs-Amazon comparison can require both `MSFT 2023 cloud` and `AMZN 2023 AWS`; retrieving only one side receives partial Recall@K.
 
 ## Metrics
 
@@ -62,7 +90,7 @@ Retrieving only one side receives partial Recall@K.
 | Hit@K | Whether at least one expected target was found | 1 if any target is covered, else 0 |
 | MRR@K | How early the first relevant chunk appears | reciprocal rank of first relevant result |
 
-For simple cases, Recall@K usually has one target. For multi-hop and comparison cases, Recall@K measures target coverage across multiple required evidence targets.
+For multi-hop and comparison cases, Recall@K measures target coverage across multiple required evidence targets.
 
 ```mermaid
 flowchart TD
@@ -74,104 +102,57 @@ flowchart TD
     C2 --> S
 ```
 
+## Qrels And Judge Review
+
+Qrels are query/chunk relevance judgments. This project keeps qrels separate from eval cases so candidate labels do not silently become benchmark labels.
+
+```mermaid
+flowchart LR
+    A["Filtered retrieval run"] --> B["Pooled candidate qrels"]
+    B --> C["Qrels audit\ncoverage + duplicates + unknown cases"]
+    B --> D["Judge decisions\naccepted / rejected + confidence + rationale"]
+    D --> E["Reviewed qrels"]
+    E --> F["Accepted-qrels benchmark"]
+    D --> G["Judge agreement report"]
+```
+
+Judge decisions include:
+
+| Field | Meaning |
+|---|---|
+| `decision` | `accepted` or `rejected` |
+| `confidence` | Judge confidence from 0.0 to 1.0 |
+| `rationale` | Concise explanation |
+| `judge_model` | Judge provider/model identifier |
+| `rubric_version` | Rubric used to make the judgment |
+
+The local rubric judge is deterministic and useful as a baseline. The Claude judge provides semantic review and catches cases where exact keyword matching is too strict or too loose.
+
+## Reports
+
+| Report | Description |
+|---|---|
+| [`project1_voyage_faiss_top3_unfiltered.md`](reports/project1_voyage_faiss_top3_unfiltered.md) | Pure semantic retrieval baseline |
+| [`project1_voyage_faiss_top3_tool_filtered.md`](reports/project1_voyage_faiss_top3_tool_filtered.md) | Metadata-aware filtered retrieval run |
+| [`project1_voyage_faiss_top3_tool_filtered_qrels_claude_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_claude_accepted.md) | Filtered run scored against Claude-accepted qrels |
+| [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
+| [`retrieval_v1_claude_judge_decisions.md`](qrels/retrieval_v1_claude_judge_decisions.md) | Claude judge decisions with confidence and rationale |
+| [`retrieval_v1_claude_judged_qrels.md`](qrels/retrieval_v1_claude_judged_qrels.md) | Claude decisions applied to pooled qrels |
+| [`retrieval_v1_claude_judged_qrels_audit.md`](qrels/retrieval_v1_claude_judged_qrels_audit.md) | Coverage and integrity audit for Claude-judged qrels |
+| [`rubric_vs_claude_judge_agreement.md`](qrels/rubric_vs_claude_judge_agreement.md) | Agreement and disagreement analysis between rubric and Claude judges |
+
+Additional qrels workflow artifacts are stored in [`qrels/`](qrels/) and candidate label audits are stored in [`label_candidates/`](label_candidates/).
+
 ## Documentation
 
 | Document | Purpose |
 |---|---|
 | [`docs/METRICS.md`](docs/METRICS.md) | Retrieval and agent trace metric definitions |
 | [`docs/DATASET.md`](docs/DATASET.md) | Dataset schema and labeling policy |
+| [`docs/QRELS.md`](docs/QRELS.md) | Pooled qrels, judge review, qrels scoring, and agreement workflow |
 | [`docs/AGENT_TRACE_EVAL.md`](docs/AGENT_TRACE_EVAL.md) | Tool-call and argument-level agent trace evaluation |
 | [`docs/REGRESSION_COMPARISON.md`](docs/REGRESSION_COMPARISON.md) | Baseline-vs-candidate run comparison |
 | [`docs/LABEL_HARDENING.md`](docs/LABEL_HARDENING.md) | Review workflow for promoting target-level matches into explicit chunk labels |
-| [`docs/QRELS.md`](docs/QRELS.md) | Pooled relevance judgment format and review workflow |
-
-## Benchmark Results
-
-Real Project 1 retrieval run, `top_k=3`, Voyage finance embeddings, FAISS `IndexFlatIP` over L2-normalized vectors.
-
-### Unfiltered Semantic Retrieval
-
-Searches with question text only. This is the pure semantic retrieval baseline.
-
-| Provider | Case Type | Cases | Precision@3 | Recall@3 | Hit@3 | MRR@3 | Runtime Errors |
-|---|---|---:|---:|---:|---:|---:|---:|
-| voyage-faiss | comparison | 4 | 0.417 | 0.500 | 1.000 | 0.583 | 0 |
-| voyage-faiss | metadata_filtered | 6 | 0.389 | 0.667 | 0.667 | 0.361 | 0 |
-| voyage-faiss | multi_hop | 4 | 0.583 | 0.750 | 1.000 | 0.875 | 0 |
-| voyage-faiss | simple | 10 | 0.333 | 0.700 | 0.700 | 0.600 | 0 |
-
-### Tool-Style Filtered Retrieval
-
-Applies expected ticker/year filters when the case has a single expected ticker and year. This represents metadata-aware retrieval, similar to the structured search path used by the base RAG agent.
-
-| Provider | Case Type | Cases | Precision@3 | Recall@3 | Hit@3 | MRR@3 | Runtime Errors |
-|---|---|---:|---:|---:|---:|---:|---:|
-| voyage-faiss-filtered | comparison | 4 | 0.833 | 0.625 | 1.000 | 0.875 | 0 |
-| voyage-faiss-filtered | metadata_filtered | 6 | 0.556 | 0.833 | 0.833 | 0.556 | 0 |
-| voyage-faiss-filtered | multi_hop | 4 | 0.583 | 0.750 | 1.000 | 0.875 | 0 |
-| voyage-faiss-filtered | simple | 10 | 0.733 | 1.000 | 1.000 | 0.833 | 0 |
-
-## Result Interpretation
-
-| Observation | Interpretation |
-|---|---|
-| Filtered retrieval improves simple-case Precision@3 from 0.333 to 0.733 | Metadata filters remove wrong-company and wrong-year chunks before ranking. |
-| Filtered simple-case Recall@3 and Hit@3 reach 1.000 | Single-target questions are consistently covered when ticker/year constraints are available. |
-| Filtered comparison Precision@3 is 0.833 but Recall@3 is 0.625 | Retrieved chunks are often relevant, but top-k may cover only one side of a comparison. |
-| Filtered simple-case MRR@3 is 0.833 | Relevant evidence usually appears near the top of the ranked list. |
-| Unfiltered retrieval remains lower across most categories | Query text alone is a harder baseline for company/year-specific financial retrieval. |
-
-## Report Outputs
-
-```mermaid
-flowchart LR
-    A["retrieval_v1.jsonl"] --> B["run-project1-retrieval"]
-    B --> C["sample_runs/*.jsonl"]
-    C --> D["score-run"]
-    D --> E["reports/*.json"]
-    D --> F["reports/*.md"]
-    E --> G["compare-runs"]
-    G --> H["regression report"]
-```
-
-Generated Markdown reports are available here:
-
-| Report | Description |
-|---|---|
-| [`project1_voyage_faiss_top3_unfiltered.md`](reports/project1_voyage_faiss_top3_unfiltered.md) | Pure semantic retrieval baseline |
-| [`project1_voyage_faiss_top3_tool_filtered.md`](reports/project1_voyage_faiss_top3_tool_filtered.md) | Metadata-aware filtered retrieval run |
-| [`project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md) | Filtered run scored against pooled candidate qrels |
-| [`project1_voyage_faiss_top3_tool_filtered_qrels_assisted_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_assisted_accepted.md) | Filtered run scored against assisted accepted qrels |
-| [`project1_voyage_faiss_top3_tool_filtered_qrels_rubric_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_rubric_accepted.md) | Filtered run scored against local rubric-judge accepted qrels |
-| [`project1_voyage_faiss_top3_tool_filtered_qrels_claude_accepted.md`](reports/project1_voyage_faiss_top3_tool_filtered_qrels_claude_accepted.md) | Filtered run scored against Claude-judge accepted qrels |
-| [`unfiltered_vs_filtered.md`](reports/unfiltered_vs_filtered.md) | Regression comparison between unfiltered and filtered retrieval |
-| [`tool_filtered_top3.md`](label_candidates/tool_filtered_top3.md) | Candidate `relevant_chunk_ids` for human relevance review |
-| [`retrieval_v1_pooled_top3.md`](qrels/retrieval_v1_pooled_top3.md) | Pooled candidate qrels generated from the filtered top-3 run |
-| [`retrieval_v1_pooled_top3_audit.md`](qrels/retrieval_v1_pooled_top3_audit.md) | Qrels coverage and integrity audit |
-| [`retrieval_v1_review_packet.md`](qrels/retrieval_v1_review_packet.md) | Human-review checklist for candidate qrels |
-| [`retrieval_v1_assisted_reviewed_qrels.md`](qrels/retrieval_v1_assisted_reviewed_qrels.md) | Assisted seed decisions applied to pooled qrels |
-| [`retrieval_v1_assisted_reviewed_qrels_audit.md`](qrels/retrieval_v1_assisted_reviewed_qrels_audit.md) | Coverage and integrity audit for assisted reviewed qrels |
-| [`retrieval_v1_rubric_judge_decisions.md`](qrels/retrieval_v1_rubric_judge_decisions.md) | Local rubric judge decisions with confidence and rationale |
-| [`retrieval_v1_rubric_judged_qrels.md`](qrels/retrieval_v1_rubric_judged_qrels.md) | Rubric judge decisions applied to pooled qrels |
-| [`retrieval_v1_rubric_judged_qrels_audit.md`](qrels/retrieval_v1_rubric_judged_qrels_audit.md) | Coverage and integrity audit for rubric judged qrels |
-| [`retrieval_v1_claude_judge_decisions.md`](qrels/retrieval_v1_claude_judge_decisions.md) | Claude judge decisions with confidence and rationale |
-| [`retrieval_v1_claude_judged_qrels.md`](qrels/retrieval_v1_claude_judged_qrels.md) | Claude judge decisions applied to pooled qrels |
-| [`retrieval_v1_claude_judged_qrels_audit.md`](qrels/retrieval_v1_claude_judged_qrels_audit.md) | Coverage and integrity audit for Claude judged qrels |
-| [`rubric_vs_claude_judge_agreement.md`](qrels/rubric_vs_claude_judge_agreement.md) | Agreement and disagreement analysis between rubric and Claude judges |
-
-Markdown reports include:
-
-| Section | Purpose |
-|---|---|
-| Benchmark Summary | Aggregate Precision@K, Recall@K, Hit@K, and MRR@K by provider and case type |
-| Failure Analysis | Cases with missed evidence targets |
-| Case Results | Per-case metric details |
-
-Example failure analysis row:
-
-| Case | Covered Targets | Missed Targets |
-|---|---|---|
-| `msft_cloud_vs_amzn_aws_2023` | MSFT 2023 cloud | AMZN 2023 AWS |
 
 ## Install
 
@@ -181,24 +162,15 @@ python -m venv .venv
 pip install -e .[dev]
 ```
 
-## Validate Cases
+## Common Commands
+
+Validate cases:
 
 ```powershell
 financial-rag-eval validate-cases eval_cases/retrieval_v1.jsonl
 ```
 
-## Run Project 1 Retrieval
-
-Requires Project 1's `.env` with `VOYAGE_API_KEY` and an existing Project 1 FAISS index.
-
-```powershell
-financial-rag-eval run-project1-retrieval `
-  --cases eval_cases/retrieval_v1.jsonl `
-  --out sample_runs/project1_voyage_faiss_top3_unfiltered.jsonl `
-  --top-k 3
-```
-
-Filtered/tool-style run:
+Run Project 1 retrieval:
 
 ```powershell
 financial-rag-eval run-project1-retrieval `
@@ -209,32 +181,18 @@ financial-rag-eval run-project1-retrieval `
   --use-expected-filters
 ```
 
-## Compare Two Reports
+Score a retrieval run:
 
 ```powershell
-financial-rag-eval compare-runs `
-  --baseline reports/project1_voyage_faiss_top3_unfiltered.json `
-  --candidate reports/project1_voyage_faiss_top3_tool_filtered.json `
-  --baseline-name unfiltered `
-  --candidate-name filtered `
-  --out-json reports/unfiltered_vs_filtered.json `
-  --out-md reports/unfiltered_vs_filtered.md
-```
-
-## Generate Label Candidates
-
-```powershell
-financial-rag-eval suggest-labels `
+financial-rag-eval score-run `
   --cases eval_cases/retrieval_v1.jsonl `
   --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
   --k 3 `
-  --out-jsonl label_candidates/tool_filtered_top3.jsonl `
-  --out-md label_candidates/tool_filtered_top3.md
+  --out-json reports/project1_voyage_faiss_top3_tool_filtered.json `
+  --out-md reports/project1_voyage_faiss_top3_tool_filtered.md
 ```
 
-This command produces review candidates only. Confirmed chunk IDs should be manually promoted into the eval cases before treating them as gold labels.
-
-## Export Pooled Qrels
+Export pooled qrels:
 
 ```powershell
 financial-rag-eval export-qrels `
@@ -246,71 +204,7 @@ financial-rag-eval export-qrels `
   --out-md qrels/retrieval_v1_pooled_top3.md
 ```
 
-## Score With Qrels
-
-```powershell
-financial-rag-eval score-qrels `
-  --cases eval_cases/retrieval_v1.jsonl `
-  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
-  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
-  --judgment-status candidate `
-  --k 3 `
-  --out-json reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.json `
-  --out-md reports/project1_voyage_faiss_top3_tool_filtered_qrels_candidate.md
-```
-
-The candidate-qrels report validates the scoring path. Reviewed benchmarks should use `accepted` qrels.
-
-## Audit Qrels
-
-```powershell
-financial-rag-eval audit-qrels `
-  --cases eval_cases/retrieval_v1.jsonl `
-  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
-  --out-json qrels/retrieval_v1_pooled_top3_audit.json `
-  --out-md qrels/retrieval_v1_pooled_top3_audit.md
-```
-
-## Make A Review Packet
-
-```powershell
-financial-rag-eval make-review-packet `
-  --cases eval_cases/retrieval_v1.jsonl `
-  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
-  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
-  --judgment-status candidate `
-  --out-jsonl qrels/retrieval_v1_review_packet.jsonl `
-  --out-md qrels/retrieval_v1_review_packet.md
-```
-
-## Apply Review Decisions
-
-```powershell
-financial-rag-eval apply-review-decisions `
-  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
-  --decisions qrels/retrieval_v1_assisted_review.jsonl `
-  --source assisted_review `
-  --out-jsonl qrels/retrieval_v1_assisted_reviewed_qrels.jsonl `
-  --out-md qrels/retrieval_v1_assisted_reviewed_qrels.md
-```
-
-The assisted review file is a seed labeling artifact, not a substitute for independent human review.
-
-## Judge Qrels
-
-```powershell
-financial-rag-eval judge-qrels `
-  --cases eval_cases/retrieval_v1.jsonl `
-  --run sample_runs/project1_voyage_faiss_top3_tool_filtered.jsonl `
-  --qrels qrels/retrieval_v1_pooled_top3.jsonl `
-  --judgment-status candidate `
-  --out-jsonl qrels/retrieval_v1_rubric_judge_decisions.jsonl `
-  --out-md qrels/retrieval_v1_rubric_judge_decisions.md
-```
-
-The local rubric judge is a deterministic baseline for the review loop. A production setup can replace it with an independent LLM judge and keep the same decision schema.
-
-Claude judge run:
+Run Claude judge:
 
 ```powershell
 financial-rag-eval judge-qrels `
@@ -323,7 +217,7 @@ financial-rag-eval judge-qrels `
   --out-md qrels/retrieval_v1_claude_judge_decisions.md
 ```
 
-Judge agreement:
+Compare judges:
 
 ```powershell
 financial-rag-eval compare-judges `
@@ -335,21 +229,11 @@ financial-rag-eval compare-judges `
   --out-md qrels/rubric_vs_claude_judge_agreement.md
 ```
 
-## Score A Retrieval Run
+## Interpretation And Limitations
 
-```powershell
-financial-rag-eval score-run `
-  --cases eval_cases/retrieval_v1.jsonl `
-  --run sample_runs/project1_voyage_faiss_top3_unfiltered.jsonl `
-  --k 3 `
-  --out-json reports/project1_voyage_faiss_top3_unfiltered.json `
-  --out-md reports/project1_voyage_faiss_top3_unfiltered.md
-```
-
-## Limitations
-
-- The v1 dataset is small and should be treated as a focused retrieval benchmark, not a broad production benchmark.
-- Target-level metadata/term labels are inspectable, but reviewed qrels with independent spot checks would make the benchmark stricter.
+- The v1 dataset is a focused 24-case benchmark, not a broad production benchmark.
+- Claude-judged qrels are model-assisted relevance labels and should be spot-checked before being treated as production benchmark labels.
+- Cases with no accepted qrels are surfaced as unlabeled rather than hidden.
 - Precision@K and Recall@K evaluate retrieval quality, not final answer correctness.
 - The filtered benchmark uses expected metadata when available, so it should be interpreted separately from the unfiltered semantic baseline.
-- The current scope does not include dashboarding, nDCG, or large-scale monitoring.
+- The current scope intentionally excludes dashboarding, nDCG, and large-scale monitoring.
