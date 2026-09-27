@@ -162,6 +162,8 @@ python -m venv .venv
 pip install -e .[dev]
 ```
 
+The Claude judge (`--judge-provider claude`) reads `ANTHROPIC_API_KEY` from the environment or a local `.env` file, which is git-ignored.
+
 ## Common Commands
 
 Validate cases:
